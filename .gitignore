@@ -1,0 +1,24 @@
+# Gradle
+.gradle/
+build/
+bin/
+out/
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# Project Specific
+temp_gradle/
+temp_gradle_global/
+gradle.zip
+setup-wrapper.ps1
+setup-server.sh
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

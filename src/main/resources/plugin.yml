@@ -1,0 +1,5 @@
+name: VortexiaCore
+version: ${version}
+main: com.vortexia.core.VortexiaCore
+api-version: '1.21'
+author: Alikuxac
