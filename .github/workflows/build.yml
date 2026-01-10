@@ -2,9 +2,9 @@ name: Build Plugin
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "main", "master", "development" ]
   pull_request:
-    branches: [ "main", "master" ]
+    branches: [ "main", "master", "development" ]
 
 jobs:
   build:
@@ -28,5 +28,5 @@ jobs:
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: vortexia-core-jar
+        name: vortexia-core-${{ github.ref_name }}
         path: build/libs/*.jar

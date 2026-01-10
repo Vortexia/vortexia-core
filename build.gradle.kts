@@ -4,7 +4,8 @@ plugins {
 }
 
 group = "com.vortexia"
-version = "0.0.1"
+val branch = System.getenv("GITHUB_REF_NAME") ?: "local"
+version = if (branch == "master" || branch == "main") "0.0.1" else if (branch == "development") "0.0.1-DEV" else "0.0.1-${branch.uppercase()}"
 
 repositories {
     mavenCentral()
