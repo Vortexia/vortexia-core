@@ -4,8 +4,18 @@ plugins {
 }
 
 group = "com.vortexia"
-val branch = System.getenv("GITHUB_REF_NAME") ?: "local"
-version = if (branch == "master" || branch == "main") "0.0.1" else if (branch == "development") "0.0.1-DEV" else "0.0.1-${branch.uppercase()}"
+val refName = System.getenv("GITHUB_REF_NAME") ?: "local"
+val refType = System.getenv("GITHUB_REF_TYPE") ?: "branch"
+
+version = if (refType == "tag") {
+    refName.replaceFirst("v", "")
+} else if (refName == "master" || refName == "main") {
+    "0.0.1"
+} else if (refName == "development") {
+    "0.0.1-DEV"
+} else {
+    "0.0.1-${refName.uppercase()}"
+}
 
 repositories {
     mavenCentral()
