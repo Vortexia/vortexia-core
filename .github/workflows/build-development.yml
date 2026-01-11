@@ -33,7 +33,15 @@ jobs:
         name: vortexia-core-dev
         path: build/libs/*.jar
 
-    - name: Create Dev Release
+    - name: Update Dev-Snapshot Tag
+      if: github.event_name == 'push' && github.ref == 'refs/heads/development'
+      run: |
+        git tag -f Dev-Snapshot
+        git push origin Dev-Snapshot --force
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create/Update Dev Release
       if: github.event_name == 'push' && github.ref == 'refs/heads/development'
       uses: ncipollo/release-action@v1
       with:
@@ -41,7 +49,8 @@ jobs:
         tag: "Dev-Snapshot"
         name: "Development Snapshot"
         allowUpdates: true
+        replacesArtifacts: true
         prerelease: true
         makeLatest: false
-        body: "Automated snapshot build from development branch."
+        body: "Automated snapshot build from development branch. Always reflects the latest commit."
         token: ${{ secrets.GITHUB_TOKEN }}

@@ -35,7 +35,7 @@ jobs:
         path: build/libs/*.jar
 
     - name: Create Release
-      if: startsWith(github.ref, 'refs/tags/')
+      if: startsWith(github.ref, 'refs/tags/v')
       uses: softprops/action-gh-release@v2
       with:
         files: build/libs/*.jar
@@ -44,5 +44,6 @@ jobs:
         draft: false
         prerelease: false
         make_latest: true
+        generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
