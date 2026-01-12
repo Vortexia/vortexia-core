@@ -1,13 +1,18 @@
 // Developed by alikuxac - Project Vortexia
 package me.alikuxac.vortexia.core;
 
-import me.alikuxac.vortexia.core.command.CommandManager;
-
-import me.alikuxac.vortexia.core.config.ConfigManager;
-import me.alikuxac.vortexia.core.service.LoggerService;
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPIPaperConfig;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import me.alikuxac.vortexia.core.api.VortexiaAPI;
+import me.alikuxac.vortexia.core.command.CommandManager;
+import me.alikuxac.vortexia.core.config.ConfigManager;
+import me.alikuxac.vortexia.core.listener.PlayerListener;
+import me.alikuxac.vortexia.core.service.LoggerService;
+import me.alikuxac.vortexia.core.storage.StorageException;
+import me.alikuxac.vortexia.core.storage.StorageManager;
+import me.alikuxac.vortexia.core.storage.util.IdentityUtil;
 
 public final class VortexiaCore extends JavaPlugin {
 
@@ -15,6 +20,8 @@ public final class VortexiaCore extends JavaPlugin {
     private LoggerService loggerService;
     private ConfigManager configManager;
     private CommandManager commandManager;
+    private StorageManager storageManager;
+    private IdentityUtil identityUtil;
 
     @Override
     public void onLoad() {
@@ -33,6 +40,25 @@ public final class VortexiaCore extends JavaPlugin {
         this.configManager.loadConfig();
 
         this.loggerService = new LoggerService(this);
+        this.identityUtil = new IdentityUtil(this);
+
+        this.storageManager = new StorageManager(this);
+        try {
+            this.storageManager.initialize();
+        } catch (StorageException e) {
+            getLogger().severe("Failed to initialize storage: " + e.getMessage());
+            e.printStackTrace();
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+
+        loggerService.info("Server online mode: " + (identityUtil.isOnlineMode() ? "ENABLED" : "DISABLED"));
+
+        VortexiaAPI.initialize(this);
+
+        getServer().getPluginManager().registerEvents(
+                new PlayerListener(this),
+                this);
 
         CommandAPI.onEnable();
         this.commandManager = new CommandManager(this);
@@ -41,6 +67,9 @@ public final class VortexiaCore extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (storageManager != null) {
+            storageManager.shutdown();
+        }
         CommandAPI.onDisable();
     }
 
@@ -54,5 +83,13 @@ public final class VortexiaCore extends JavaPlugin {
 
     public ConfigManager getConfigManager() {
         return configManager;
+    }
+
+    public StorageManager getStorageManager() {
+        return storageManager;
+    }
+
+    public IdentityUtil getIdentityUtil() {
+        return identityUtil;
     }
 }

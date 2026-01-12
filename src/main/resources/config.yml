@@ -27,6 +27,48 @@ identity:
     # Require security PIN if player UUID changes but name remains same
     require-pin: true
 
+# Storage Configuration
+storage:
+  # Storage type: SQLITE or MYSQL
+  type: "SQLITE"
+  
+  # SQLite Settings (used when type = SQLITE)
+  sqlite:
+    # Database file path (relative to plugin data folder)
+    file: "vortexia.db"
+  
+  # MySQL Settings (used when type = MYSQL)
+  mysql:
+    host: "localhost"
+    port: 3306
+    database: "vortexia"
+    username: "root"
+    password: ""
+    # Connection pool settings
+    pool:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+# Cache Configuration
+cache:
+  # Enable in-memory caching
+  enabled: true
+  
+  # Maximum cache size (number of identities)
+  max-size: 10000
+  
+  # Cache TTL in minutes (0 = no expiration)
+  ttl-minutes: 30
+  
+  # Invalidate cache on player quit
+  invalidate-on-quit: false
+  
+  # Async cache loading
+  async-loading: true
+
 # Basic Message Strings
 messages:
   no-permission: "&cYou do not have permission to perform this action!"
