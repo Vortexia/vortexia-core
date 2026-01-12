@@ -3,7 +3,7 @@ plugins {
     id("com.gradleup.shadow") version "8.3.5"
 }
 
-group = "com.vortexia"
+group = "me.alikuxac.vortexia"
 val refName = System.getenv("GITHUB_REF_NAME") ?: "local"
 val refType = System.getenv("GITHUB_REF_TYPE") ?: "branch"
 
@@ -52,7 +52,7 @@ tasks {
 
     shadowJar {
         archiveClassifier.set("")
-        relocate("dev.jorel.commandapi", "com.vortexia.core.libs.commandapi")
+        relocate("dev.jorel.commandapi", "me.alikuxac.vortexia.core.libs.commandapi")
         mergeServiceFiles()
     }
 

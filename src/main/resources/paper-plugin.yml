@@ -1,6 +1,6 @@
 name: VortexiaCore
 version: ${version}
-main: com.vortexia.core.VortexiaCore
+main: me.alikuxac.vortexia.core.VortexiaCore
 api-version: '1.21'
 author: Alikuxac
 # Paper 1.21+ specific configuration

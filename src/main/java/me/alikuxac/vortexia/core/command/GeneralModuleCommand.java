@@ -1,10 +1,8 @@
-package com.vortexia.core.command;
+// Developed by alikuxac - Project Vortexia
+package me.alikuxac.vortexia.core.command;
 
 import dev.jorel.commandapi.CommandAPICommand;
 
-/**
- * Module chứa các lệnh thông tin chung như link, guide.
- */
 public class GeneralModuleCommand implements SubCommand {
 
   @Override

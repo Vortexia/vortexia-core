@@ -1,6 +1,7 @@
-package com.vortexia.core.config;
+// Developed by alikuxac - Project Vortexia
+package me.alikuxac.vortexia.core.config;
 
-import com.vortexia.core.VortexiaCore;
+import me.alikuxac.vortexia.core.VortexiaCore;
 import org.bukkit.configuration.file.FileConfiguration;
 
 public class ConfigManager {

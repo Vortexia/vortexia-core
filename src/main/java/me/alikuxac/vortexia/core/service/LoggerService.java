@@ -1,6 +1,7 @@
-package com.vortexia.core.service;
+// Developed by alikuxac - Project Vortexia
+package me.alikuxac.vortexia.core.service;
 
-import com.vortexia.core.VortexiaCore;
+import me.alikuxac.vortexia.core.VortexiaCore;
 import org.bukkit.ChatColor;
 import java.util.logging.Level;
 

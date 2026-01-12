@@ -1,9 +1,10 @@
-package com.vortexia.core;
+// Developed by alikuxac - Project Vortexia
+package me.alikuxac.vortexia.core;
 
-import com.vortexia.core.command.CommandManager;
+import me.alikuxac.vortexia.core.command.CommandManager;
 
-import com.vortexia.core.config.ConfigManager;
-import com.vortexia.core.service.LoggerService;
+import me.alikuxac.vortexia.core.config.ConfigManager;
+import me.alikuxac.vortexia.core.service.LoggerService;
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPIPaperConfig;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -28,14 +29,11 @@ public final class VortexiaCore extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        // Load configuration
         this.configManager = new ConfigManager(this);
         this.configManager.loadConfig();
 
-        // Initialize Logger
         this.loggerService = new LoggerService(this);
 
-        // Setup Commands
         CommandAPI.onEnable();
         this.commandManager = new CommandManager(this);
         this.commandManager.registerCommands();

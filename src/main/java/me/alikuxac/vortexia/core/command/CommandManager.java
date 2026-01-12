@@ -1,6 +1,7 @@
-package com.vortexia.core.command;
+// Developed by alikuxac - Project Vortexia
+package me.alikuxac.vortexia.core.command;
 
-import com.vortexia.core.VortexiaCore;
+import me.alikuxac.vortexia.core.VortexiaCore;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,13 +16,10 @@ public class CommandManager {
   }
 
   private void setup() {
-    // Tạo Root Command chính /vx
     CoreCommand root = new CoreCommand();
 
-    // Gắn các module subcommand vào Root
     root.registerSubCommand(new GeneralModuleCommand());
 
-    // Thêm các lệnh độc lập khác nếu có
     commands.add(root);
   }
 
