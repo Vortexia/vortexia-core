@@ -1,0 +1,34 @@
+# ==========================================
+# Vortexia Core - Configuration
+# ==========================================
+
+# System and Display Settings
+system:
+  # Prefix for all chat and console messages
+  prefix: "&8[&bVortexia&8] &f"
+  
+  # Debug Mode: Enable to see detailed logs in console
+  # Useful for development and troubleshooting command registrations
+  debug: false
+
+# Command Management Settings
+commands:
+  # The primary base command for the plugin
+  main-command: "vortexia"
+  # Alternative aliases for quick access
+  aliases: 
+    - "vx"
+
+# Identity & Flex-Mode Settings (For upcoming features)
+identity:
+  flex-mode:
+    # Automatically detect server mode (Online vs Offline)
+    auto-detect: true
+    # Require security PIN if player UUID changes but name remains same
+    require-pin: true
+
+# Basic Message Strings
+messages:
+  no-permission: "&cYou do not have permission to perform this action!"
+  plugin-reloaded: "&aConfiguration has been successfully reloaded."
+  unknown-command: "&cUnknown command. Type /vx help for assistance."

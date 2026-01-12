@@ -1,6 +1,6 @@
 plugins {
     java
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.gradleup.shadow") version "8.3.5"
 }
 
 group = "com.vortexia"
@@ -20,10 +20,16 @@ version = if (refType == "tag") {
 repositories {
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
+    maven("https://repo.codemc.org/repository/maven-public/")
+    maven("https://repo.panda-lang.org/releases")
+    maven("https://jitpack.io")
 }
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT")
+    implementation("dev.jorel:commandapi-paper-shade:11.1.0")
+    compileOnly("dev.jorel:commandapi-annotations:11.1.0")
+    annotationProcessor("dev.jorel:commandapi-annotations:11.1.0")
 }
 
 java {
@@ -34,12 +40,27 @@ tasks {
     compileJava {
         options.encoding = "UTF-8"
         options.release.set(21)
+        options.compilerArgs.add("-Xlint:all")
     }
 
     processResources {
         inputs.property("version", project.version)
-        filesMatching("plugin.yml") {
+        filesMatching("**/paper-plugin.yml") {
             expand("version" to project.version)
         }
+    }
+
+    shadowJar {
+        archiveClassifier.set("")
+        relocate("dev.jorel.commandapi", "com.vortexia.core.libs.commandapi")
+        mergeServiceFiles()
+    }
+
+    jar {
+        enabled = false
+    }
+
+    build {
+        dependsOn(shadowJar)
     }
 }

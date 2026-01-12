@@ -1,0 +1,7 @@
+name: VortexiaCore
+version: ${version}
+main: com.vortexia.core.VortexiaCore
+api-version: '1.21'
+author: Alikuxac
+# Paper 1.21+ specific configuration
+# This helps Paper understand how to load the plugin and its NMS dependencies
