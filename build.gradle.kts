@@ -30,6 +30,14 @@ dependencies {
     implementation("dev.jorel:commandapi-paper-shade:11.1.0")
     compileOnly("dev.jorel:commandapi-annotations:11.1.0")
     annotationProcessor("dev.jorel:commandapi-annotations:11.1.0")
+    
+    // Storage dependencies
+    implementation("com.zaxxer:HikariCP:5.1.0")
+    implementation("org.xerial:sqlite-jdbc:3.47.1.0")
+    implementation("com.mysql:mysql-connector-j:9.1.0")
+    
+    // Cache dependency
+    implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
 }
 
 java {
@@ -53,6 +61,7 @@ tasks {
     shadowJar {
         archiveClassifier.set("")
         relocate("dev.jorel.commandapi", "me.alikuxac.vortexia.core.libs.commandapi")
+        relocate("com.zaxxer.hikari", "me.alikuxac.vortexia.core.libs.hikari")
         mergeServiceFiles()
     }
 
