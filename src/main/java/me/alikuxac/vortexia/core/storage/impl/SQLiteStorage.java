@@ -25,6 +25,7 @@ public class SQLiteStorage implements IStorage {
       CREATE TABLE IF NOT EXISTS vortexia_identities (
           uuid VARCHAR(36) PRIMARY KEY,
           premium_uuid VARCHAR(36),
+          citizen_id VARCHAR(12),
           name VARCHAR(16) NOT NULL,
           pin VARCHAR(64),
           created_at BIGINT NOT NULL,
@@ -33,30 +34,37 @@ public class SQLiteStorage implements IStorage {
       """;
 
   private static final String CREATE_INDEX = """
-      CREATE INDEX IF NOT EXISTS idx_name ON vortexia_identities(name)
+      CREATE INDEX IF NOT EXISTS idx_name ON vortexia_identities(name);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_citizen_id ON vortexia_identities(citizen_id);
       """;
 
   private static final String INSERT_IDENTITY = """
-      INSERT OR REPLACE INTO vortexia_identities (uuid, premium_uuid, name, pin, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT OR REPLACE INTO vortexia_identities (uuid, premium_uuid, citizen_id, name, pin, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       """;
 
   private static final String SELECT_BY_UUID = """
-      SELECT uuid, premium_uuid, name, pin, created_at, updated_at
+      SELECT uuid, premium_uuid, citizen_id, name, pin, created_at, updated_at
       FROM vortexia_identities
       WHERE uuid = ?
       """;
 
   private static final String SELECT_BY_NAME = """
-      SELECT uuid, premium_uuid, name, pin, created_at, updated_at
+      SELECT uuid, premium_uuid, citizen_id, name, pin, created_at, updated_at
       FROM vortexia_identities
       WHERE name = ?
       """;
 
   private static final String SELECT_BY_PREMIUM_UUID = """
-      SELECT uuid, premium_uuid, name, pin, created_at, updated_at
+      SELECT uuid, premium_uuid, citizen_id, name, pin, created_at, updated_at
       FROM vortexia_identities
       WHERE premium_uuid = ?
+      """;
+
+  private static final String SELECT_BY_CITIZEN_ID = """
+      SELECT uuid, premium_uuid, citizen_id, name, pin, created_at, updated_at
+      FROM vortexia_identities
+      WHERE citizen_id = ?
       """;
 
   private static final String UPDATE_PIN = """
@@ -126,7 +134,7 @@ public class SQLiteStorage implements IStorage {
   }
 
   @Override
-  public CompletableFuture<Void> saveIdentity(UUID uuid, UUID premiumUuid, String name, String pin) {
+  public CompletableFuture<Void> saveIdentity(UUID uuid, UUID premiumUuid, String citizenId, String name, String pin) {
     return CompletableFuture.runAsync(() -> {
       try (Connection conn = dataSource.getConnection();
           PreparedStatement stmt = conn.prepareStatement(INSERT_IDENTITY)) {
@@ -134,10 +142,11 @@ public class SQLiteStorage implements IStorage {
         long now = System.currentTimeMillis();
         stmt.setString(1, uuid.toString());
         stmt.setString(2, premiumUuid != null ? premiumUuid.toString() : null);
-        stmt.setString(3, name);
-        stmt.setString(4, pin);
-        stmt.setLong(5, now);
+        stmt.setString(3, citizenId);
+        stmt.setString(4, name);
+        stmt.setString(5, pin);
         stmt.setLong(6, now);
+        stmt.setLong(7, now);
 
         stmt.executeUpdate();
       } catch (SQLException e) {
@@ -228,6 +237,29 @@ public class SQLiteStorage implements IStorage {
   }
 
   @Override
+  public CompletableFuture<Optional<Identity>> getIdentityByCitizenId(String citizenId) {
+    return CompletableFuture.supplyAsync(() -> {
+      if (citizenId == null) {
+        return Optional.empty();
+      }
+      try (Connection conn = dataSource.getConnection();
+          PreparedStatement stmt = conn.prepareStatement(SELECT_BY_CITIZEN_ID)) {
+
+        stmt.setString(1, citizenId);
+
+        try (ResultSet rs = stmt.executeQuery()) {
+          if (rs.next()) {
+            return Optional.of(mapResultSetToIdentity(rs));
+          }
+        }
+      } catch (SQLException e) {
+        throw new RuntimeException("Failed to get identity by citizen ID", e);
+      }
+      return Optional.empty();
+    });
+  }
+
+  @Override
   public CompletableFuture<Boolean> updatePremiumUuid(UUID uuid, UUID premiumUuid) {
     return CompletableFuture.supplyAsync(() -> {
       try (Connection conn = dataSource.getConnection();
@@ -255,6 +287,7 @@ public class SQLiteStorage implements IStorage {
     return Identity.builder()
         .uuid(UUID.fromString(rs.getString("uuid")))
         .premiumUuid(premiumUuidStr != null ? UUID.fromString(premiumUuidStr) : null)
+        .citizenId(rs.getString("citizen_id"))
         .name(rs.getString("name"))
         .pin(rs.getString("pin"))
         .createdAt(rs.getLong("created_at"))

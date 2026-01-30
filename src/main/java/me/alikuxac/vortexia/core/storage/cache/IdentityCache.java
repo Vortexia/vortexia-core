@@ -20,6 +20,7 @@ public class IdentityCache {
   private final VortexiaCore plugin;
   private final Cache<UUID, Identity> uuidCache;
   private final Cache<String, Identity> nameCache;
+  private final Cache<String, Identity> citizenIdCache;
   private final Cache<UUID, Identity> premiumUuidCache;
   private final Cache<UUID, ReadWriteLock> locks;
   private final boolean enabled;
@@ -31,6 +32,7 @@ public class IdentityCache {
     if (!enabled) {
       this.uuidCache = null;
       this.nameCache = null;
+      this.citizenIdCache = null;
       this.premiumUuidCache = null;
       this.locks = null;
       plugin.getLoggerService().info("Identity cache is disabled");
@@ -49,6 +51,7 @@ public class IdentityCache {
 
     this.uuidCache = builder.build();
     this.nameCache = builder.build();
+    this.citizenIdCache = builder.build();
     this.premiumUuidCache = builder.build();
     this.locks = Caffeine.newBuilder()
         .maximumSize(maxSize)
@@ -64,6 +67,9 @@ public class IdentityCache {
 
     uuidCache.put(identity.getUuid(), identity);
     nameCache.put(identity.getName(), identity);
+    if (identity.getCitizenId() != null) {
+      citizenIdCache.put(identity.getCitizenId(), identity);
+    }
 
     if (identity.getPremiumUuid() != null) {
       premiumUuidCache.put(identity.getPremiumUuid(), identity);
@@ -82,6 +88,12 @@ public class IdentityCache {
     return Optional.ofNullable(nameCache.getIfPresent(name));
   }
 
+  public Optional<Identity> getByCitizenId(String citizenId) {
+    if (!enabled || citizenId == null)
+      return Optional.empty();
+    return Optional.ofNullable(citizenIdCache.getIfPresent(citizenId));
+  }
+
   public Optional<Identity> getByPremiumUuid(UUID premiumUuid) {
     if (!enabled || premiumUuid == null)
       return Optional.empty();
@@ -96,6 +108,9 @@ public class IdentityCache {
     if (identity != null) {
       uuidCache.invalidate(uuid);
       nameCache.invalidate(identity.getName());
+      if (identity.getCitizenId() != null) {
+        citizenIdCache.invalidate(identity.getCitizenId());
+      }
       if (identity.getPremiumUuid() != null) {
         premiumUuidCache.invalidate(identity.getPremiumUuid());
       }
@@ -119,6 +134,7 @@ public class IdentityCache {
 
     uuidCache.invalidateAll();
     nameCache.invalidateAll();
+    citizenIdCache.invalidateAll();
     premiumUuidCache.invalidateAll();
     locks.invalidateAll();
   }

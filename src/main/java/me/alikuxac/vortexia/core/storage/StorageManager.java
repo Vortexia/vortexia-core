@@ -149,9 +149,23 @@ public class StorageManager {
     });
   }
 
-  public CompletableFuture<Void> saveIdentity(UUID uuid, UUID premiumUuid, String name, String pin) {
+  public CompletableFuture<Optional<Identity>> getIdentityByCitizenId(String citizenId) {
+    if (cache.isEnabled()) {
+      Optional<Identity> cached = cache.getByCitizenId(citizenId);
+      if (cached.isPresent()) {
+        return CompletableFuture.completedFuture(cached);
+      }
+    }
+
+    return storage.getIdentityByCitizenId(citizenId).thenApply(optIdentity -> {
+      optIdentity.ifPresent(cache::put);
+      return optIdentity;
+    });
+  }
+
+  public CompletableFuture<Void> saveIdentity(UUID uuid, UUID premiumUuid, String citizenId, String name, String pin) {
     return storage.getIdentity(uuid).thenCompose(oldIdentity -> {
-      return storage.saveIdentity(uuid, premiumUuid, name, pin).thenRun(() -> {
+      return storage.saveIdentity(uuid, premiumUuid, citizenId, name, pin).thenRun(() -> {
         cache.invalidate(uuid);
 
         IdentityUpdateEvent.UpdateType updateType;

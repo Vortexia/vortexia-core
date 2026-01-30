@@ -53,6 +53,17 @@ public class VortexiaAPI {
     return plugin.getStorageManager().getIdentityByName(name);
   }
 
+  public Identity getIdentityByCitizenId(String citizenId) {
+    if (plugin.getStorageManager().getCache().isEnabled()) {
+      return plugin.getStorageManager().getCache().getByCitizenId(citizenId).orElse(null);
+    }
+    return null;
+  }
+
+  public CompletableFuture<Optional<Identity>> getIdentityByCitizenIdAsync(String citizenId) {
+    return plugin.getStorageManager().getIdentityByCitizenId(citizenId);
+  }
+
   public UUID getLatestUUID(String playerName) {
     Identity identity = getIdentityByName(playerName);
     if (identity == null) {

@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public class Identity {
 
+  private final String citizenId;
   private final UUID uuid;
   private final UUID premiumUuid;
   private final String name;
@@ -13,12 +14,17 @@ public class Identity {
   private final long updatedAt;
 
   private Identity(Builder builder) {
+    this.citizenId = builder.citizenId;
     this.uuid = builder.uuid;
     this.premiumUuid = builder.premiumUuid;
     this.name = builder.name;
     this.pin = builder.pin;
     this.createdAt = builder.createdAt;
     this.updatedAt = builder.updatedAt;
+  }
+
+  public String getCitizenId() {
+    return citizenId;
   }
 
   public UUID getUuid() {
@@ -58,12 +64,18 @@ public class Identity {
   }
 
   public static class Builder {
+    private String citizenId;
     private UUID uuid;
     private UUID premiumUuid;
     private String name;
     private String pin;
     private long createdAt;
     private long updatedAt;
+
+    public Builder citizenId(String citizenId) {
+      this.citizenId = citizenId;
+      return this;
+    }
 
     public Builder uuid(UUID uuid) {
       this.uuid = uuid;

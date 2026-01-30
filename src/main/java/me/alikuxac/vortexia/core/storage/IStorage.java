@@ -13,11 +13,13 @@ public interface IStorage {
 
   void shutdown();
 
-  CompletableFuture<Void> saveIdentity(UUID uuid, UUID premiumUuid, String name, String pin);
+  CompletableFuture<Void> saveIdentity(UUID uuid, UUID premiumUuid, String citizenId, String name, String pin);
 
   CompletableFuture<Optional<Identity>> getIdentity(UUID uuid);
 
   CompletableFuture<Optional<Identity>> getIdentityByName(String name);
+
+  CompletableFuture<Optional<Identity>> getIdentityByCitizenId(String citizenId);
 
   CompletableFuture<Optional<Identity>> getIdentityByPremiumUuid(UUID premiumUuid);
 

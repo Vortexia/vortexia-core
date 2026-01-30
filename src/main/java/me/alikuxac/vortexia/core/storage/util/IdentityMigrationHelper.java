@@ -101,6 +101,24 @@ public class IdentityMigrationHelper {
     UUID premiumUuid = identityUtil.getPremiumUuid(player);
     String name = player.getName();
 
-    return storage.saveIdentity(normalUuid, premiumUuid, name, pin);
+    return storage.getIdentity(normalUuid).thenCompose(optIdentity -> {
+      if (optIdentity.isPresent() && optIdentity.get().getCitizenId() != null) {
+        return storage.saveIdentity(normalUuid, premiumUuid, optIdentity.get().getCitizenId(), name, pin);
+      } else {
+        return findUniqueCitizenId()
+            .thenCompose(citizenId -> storage.saveIdentity(normalUuid, premiumUuid, citizenId, name, pin));
+      }
+    });
+  }
+
+  private CompletableFuture<String> findUniqueCitizenId() {
+    String candidate = CitizenIdGenerator.generate();
+    return storage.getIdentityByCitizenId(candidate).thenCompose(opt -> {
+      if (opt.isPresent()) {
+        return findUniqueCitizenId();
+      } else {
+        return CompletableFuture.completedFuture(candidate);
+      }
+    });
   }
 }
