@@ -47,6 +47,13 @@ public class IdentityMigrationHelper {
               .thenCompose(optByName -> {
                 if (optByName.isPresent()) {
                   Identity existing = optByName.get();
+
+                  if (existing.getPin() != null && !existing.getPin().isEmpty()) {
+                    plugin.getLoggerService().info(
+                        "Migration paused for " + name + ": PIN protected. Returned for verification.");
+                    return CompletableFuture.completedFuture(optByName);
+                  }
+
                   plugin.getLoggerService().info(
                       "Migrating " + name + " to online mode (premium UUID: " + premiumUuid + ")");
 
@@ -77,10 +84,17 @@ public class IdentityMigrationHelper {
               .thenCompose(optByName -> {
                 if (optByName.isPresent()) {
                   Identity existing = optByName.get();
+                  // For offline mode, if name exists but UUID is different, we check if it was
+                  // online before
                   if (existing.hasPremiumUuid()) {
+                    if (existing.getPin() != null && !existing.getPin().isEmpty()) {
+                      plugin.getLoggerService().info(
+                          "Migration paused for " + name + ": PIN protected. Returned for verification.");
+                      return CompletableFuture.completedFuture(optByName);
+                    }
+
                     plugin.getLoggerService().info(
                         "Migrating " + name + " to offline mode (clearing premium UUID)");
-
                     return storage.updatePremiumUuid(existing.getUuid(), null)
                         .thenCompose(success -> {
                           if (success) {
@@ -90,10 +104,22 @@ public class IdentityMigrationHelper {
                         });
                   }
                 }
-
                 return CompletableFuture.completedFuture(Optional.<Identity>empty());
               });
         });
+  }
+
+  public CompletableFuture<Boolean> completeMigration(Player player, Identity identity) {
+    boolean isOnlineMode = identityUtil.isOnlineMode();
+    UUID currentUuid = player.getUniqueId();
+
+    if (isOnlineMode) {
+      return storage.updatePremiumUuid(identity.getUuid(), currentUuid);
+    } else {
+      // In offline mode, if we are here, it usually means we were clearing premium
+      // uuid
+      return storage.updatePremiumUuid(identity.getUuid(), null);
+    }
   }
 
   public CompletableFuture<Void> createOrUpdateIdentity(Player player, String pin) {

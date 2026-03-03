@@ -23,6 +23,7 @@ repositories {
     maven("https://repo.codemc.org/repository/maven-public/")
     maven("https://repo.panda-lang.org/releases")
     maven("https://jitpack.io")
+    maven("https://repo.codemc.io/repository/maven-public/") // For AuthMe
 }
 
 dependencies {
@@ -38,6 +39,9 @@ dependencies {
     
     // Cache dependency
     implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
+
+    // Auth integration
+    compileOnly("fr.xephi:authme:5.6.0-SNAPSHOT")
 }
 
 java {

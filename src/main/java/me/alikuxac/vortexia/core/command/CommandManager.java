@@ -20,6 +20,10 @@ public class CommandManager {
 
     root.registerSubCommand(new GeneralModuleCommand());
 
+    // Independent commands
+    new ProfileCommand(plugin).register();
+    new PINCommand(plugin).register();
+
     commands.add(root);
   }
 

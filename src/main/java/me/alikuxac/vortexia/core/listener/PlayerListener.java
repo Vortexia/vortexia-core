@@ -32,6 +32,9 @@ public class PlayerListener implements Listener {
 
     boolean asyncLoading = plugin.getConfig().getBoolean("cache.async-loading", true);
 
+    // Force unauthenticated status immediately (AIO-440)
+    plugin.getSecurityManager().markAsUnauthenticated(player);
+
     if (asyncLoading) {
       loadIdentityAsync(player);
     } else {
@@ -53,7 +56,7 @@ public class PlayerListener implements Listener {
   }
 
   private void loadIdentityAsync(Player player) {
-    plugin.getStorageManager().getIdentity(player.getUniqueId())
+    plugin.getIdentityMigrationHelper().findOrMigrateIdentity(player)
         .thenAccept(optIdentity -> {
           if (optIdentity.isPresent()) {
             Identity identity = optIdentity.get();
@@ -67,9 +70,34 @@ public class PlayerListener implements Listener {
 
             plugin.getLoggerService().debug(
                 "Loaded identity for " + player.getName() + " into cache");
+
+            // Auth check (MANDATORY PIN Plan)
+            Bukkit.getScheduler().runTask(plugin, () -> {
+              if (plugin.getAuthHookManager().isWaitingForLogin(player)) {
+                // Delay prompt to AuthMeHook
+                return;
+              }
+
+              if (identity.getPin() == null || identity.getPin().isEmpty()) {
+                player.sendMessage(net.kyori.adventure.text.Component.text(
+                    "This account is not secured! Use /pin setup <6-digits> to set your PIN.",
+                    net.kyori.adventure.text.format.NamedTextColor.YELLOW));
+              } else {
+                player.sendMessage(net.kyori.adventure.text.Component.text(
+                    "Please verify your identity using /pin verify <digits>.",
+                    net.kyori.adventure.text.format.NamedTextColor.YELLOW));
+              }
+            });
           } else {
+            // New player logic
+            plugin.getSecurityManager().markAsUnauthenticated(player);
+            Bukkit.getScheduler().runTask(plugin, () -> {
+              player.sendMessage(net.kyori.adventure.text.Component.text(
+                  "Welcome to Vortexia! Please secure your account with /pin setup <6-digits>.",
+                  net.kyori.adventure.text.format.NamedTextColor.GREEN));
+            });
             plugin.getLoggerService().debug(
-                "No identity found for " + player.getName() + " (new player)");
+                "No identity found for " + player.getName() + " (new player will be created on save)");
           }
         })
         .exceptionally(throwable -> {

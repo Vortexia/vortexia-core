@@ -22,6 +22,10 @@ public final class VortexiaCore extends JavaPlugin {
     private CommandManager commandManager;
     private StorageManager storageManager;
     private IdentityUtil identityUtil;
+    private me.alikuxac.vortexia.core.storage.util.IdentityMigrationHelper identityMigrationHelper;
+    private me.alikuxac.vortexia.core.item.CitizenCardManager citizenCardManager;
+    private me.alikuxac.vortexia.core.service.SecurityManager securityManager;
+    private me.alikuxac.vortexia.core.hook.AuthHookManager authHookManager;
 
     @Override
     public void onLoad() {
@@ -52,12 +56,28 @@ public final class VortexiaCore extends JavaPlugin {
             return;
         }
 
+        this.identityMigrationHelper = new me.alikuxac.vortexia.core.storage.util.IdentityMigrationHelper(this);
+        this.citizenCardManager = new me.alikuxac.vortexia.core.item.CitizenCardManager(this);
+        this.securityManager = new me.alikuxac.vortexia.core.service.SecurityManager(this);
+
+        this.authHookManager = new me.alikuxac.vortexia.core.hook.AuthHookManager(this);
+        // Register Auth Hooks
+        if (getServer().getPluginManager().getPlugin("AuthMe") != null) {
+            this.authHookManager.registerHook(new me.alikuxac.vortexia.core.hook.impl.AuthMeHook(this));
+        }
+
         loggerService.info("Server online mode: " + (identityUtil.isOnlineMode() ? "ENABLED" : "DISABLED"));
 
         VortexiaAPI.initialize(this);
 
         getServer().getPluginManager().registerEvents(
                 new PlayerListener(this),
+                this);
+        getServer().getPluginManager().registerEvents(
+                new me.alikuxac.vortexia.core.listener.CitizenCardListener(this),
+                this);
+        getServer().getPluginManager().registerEvents(
+                new me.alikuxac.vortexia.core.listener.AuthRestrictListener(this),
                 this);
 
         CommandAPI.onEnable();
@@ -91,5 +111,21 @@ public final class VortexiaCore extends JavaPlugin {
 
     public IdentityUtil getIdentityUtil() {
         return identityUtil;
+    }
+
+    public me.alikuxac.vortexia.core.storage.util.IdentityMigrationHelper getIdentityMigrationHelper() {
+        return identityMigrationHelper;
+    }
+
+    public me.alikuxac.vortexia.core.item.CitizenCardManager getCitizenCardManager() {
+        return citizenCardManager;
+    }
+
+    public me.alikuxac.vortexia.core.service.SecurityManager getSecurityManager() {
+        return securityManager;
+    }
+
+    public me.alikuxac.vortexia.core.hook.AuthHookManager getAuthHookManager() {
+        return authHookManager;
     }
 }
