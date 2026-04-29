@@ -10,14 +10,15 @@ val refType = System.getenv("GITHUB_REF_TYPE") ?: "branch"
 version = if (refType == "tag") {
     refName.replaceFirst("v", "")
 } else if (refName == "master" || refName == "main") {
-    "0.0.1"
+    "0.1.0"
 } else if (refName == "development") {
-    "0.0.1-DEV"
+    "0.1.0-DEV"
 } else {
-    "0.0.1-${refName.uppercase()}"
+    "0.1.0-${refName.uppercase()}"
 }
 
 repositories {
+    mavenLocal()
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
     maven("https://repo.codemc.org/repository/maven-public/")
@@ -27,6 +28,7 @@ repositories {
 }
 
 dependencies {
+    compileOnly("com.github.Vortexia:vortexia-api:master-SNAPSHOT")
     compileOnly("io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT")
     implementation("dev.jorel:commandapi-paper-shade:11.1.0")
     compileOnly("dev.jorel:commandapi-annotations:11.1.0")

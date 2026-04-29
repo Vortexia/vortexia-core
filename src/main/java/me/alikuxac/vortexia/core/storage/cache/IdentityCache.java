@@ -13,7 +13,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 import me.alikuxac.vortexia.core.VortexiaCore;
-import me.alikuxac.vortexia.core.storage.model.Identity;
+import me.alikuxac.vortexia.api.model.Identity;
 
 public class IdentityCache {
 

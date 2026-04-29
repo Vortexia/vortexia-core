@@ -9,7 +9,7 @@ import org.bukkit.entity.Player;
 
 import me.alikuxac.vortexia.core.VortexiaCore;
 import me.alikuxac.vortexia.core.storage.IStorage;
-import me.alikuxac.vortexia.core.storage.model.Identity;
+import me.alikuxac.vortexia.api.model.Identity;
 
 public class IdentityMigrationHelper {
 

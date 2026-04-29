@@ -9,12 +9,12 @@ import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 
 import me.alikuxac.vortexia.core.VortexiaCore;
-import me.alikuxac.vortexia.core.event.IdentityLinkEvent;
-import me.alikuxac.vortexia.core.event.IdentityUpdateEvent;
+import me.alikuxac.vortexia.api.event.IdentityLinkEvent;
+import me.alikuxac.vortexia.api.event.IdentityUpdateEvent;
 import me.alikuxac.vortexia.core.storage.cache.IdentityCache;
 import me.alikuxac.vortexia.core.storage.impl.MySQLStorage;
 import me.alikuxac.vortexia.core.storage.impl.SQLiteStorage;
-import me.alikuxac.vortexia.core.storage.model.Identity;
+import me.alikuxac.vortexia.api.model.Identity;
 
 public class StorageManager {
 
@@ -181,7 +181,7 @@ public class StorageManager {
 
         storage.getIdentity(uuid).thenAccept(newIdentity -> {
           if (newIdentity.isPresent()) {
-            me.alikuxac.vortexia.core.event.IdentityUpdateEvent event = new me.alikuxac.vortexia.core.event.IdentityUpdateEvent(
+            me.alikuxac.vortexia.api.event.IdentityUpdateEvent event = new me.alikuxac.vortexia.api.event.IdentityUpdateEvent(
                 oldIdentity.orElse(null),
                 newIdentity.get(),
                 updateType);

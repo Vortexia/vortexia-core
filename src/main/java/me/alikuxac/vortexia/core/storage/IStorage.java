@@ -1,7 +1,7 @@
 // Developed by alikuxac - Project Vortexia
 package me.alikuxac.vortexia.core.storage;
 
-import me.alikuxac.vortexia.core.storage.model.Identity;
+import me.alikuxac.vortexia.api.model.Identity;
 
 import java.util.Optional;
 import java.util.UUID;

@@ -4,7 +4,7 @@ package me.alikuxac.vortexia.core.command;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.EntitySelectorArgument;
 import me.alikuxac.vortexia.core.VortexiaCore;
-import me.alikuxac.vortexia.core.storage.model.Identity;
+import me.alikuxac.vortexia.api.model.Identity;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;

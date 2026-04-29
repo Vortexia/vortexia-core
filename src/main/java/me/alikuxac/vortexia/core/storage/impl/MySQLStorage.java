@@ -16,7 +16,7 @@ import me.alikuxac.vortexia.core.VortexiaCore;
 import me.alikuxac.vortexia.core.storage.IStorage;
 import me.alikuxac.vortexia.core.storage.StorageConfig;
 import me.alikuxac.vortexia.core.storage.StorageException;
-import me.alikuxac.vortexia.core.storage.model.Identity;
+import me.alikuxac.vortexia.api.model.Identity;
 
 public class MySQLStorage implements IStorage {
 

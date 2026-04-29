@@ -5,7 +5,8 @@ import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPIPaperConfig;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import me.alikuxac.vortexia.core.api.VortexiaAPI;
+import me.alikuxac.vortexia.api.VortexiaProvider;
+import me.alikuxac.vortexia.core.api.CoreVortexiaAPI;
 import me.alikuxac.vortexia.core.command.CommandManager;
 import me.alikuxac.vortexia.core.config.ConfigManager;
 import me.alikuxac.vortexia.core.listener.PlayerListener;
@@ -26,6 +27,7 @@ public final class VortexiaCore extends JavaPlugin {
     private me.alikuxac.vortexia.core.item.CitizenCardManager citizenCardManager;
     private me.alikuxac.vortexia.core.service.SecurityManager securityManager;
     private me.alikuxac.vortexia.core.hook.AuthHookManager authHookManager;
+    private me.alikuxac.vortexia.core.addon.CoreAddonManager addonManager;
 
     @Override
     public void onLoad() {
@@ -60,6 +62,8 @@ public final class VortexiaCore extends JavaPlugin {
         this.citizenCardManager = new me.alikuxac.vortexia.core.item.CitizenCardManager(this);
         this.securityManager = new me.alikuxac.vortexia.core.service.SecurityManager(this);
 
+        this.addonManager = new me.alikuxac.vortexia.core.addon.CoreAddonManager(this);
+
         this.authHookManager = new me.alikuxac.vortexia.core.hook.AuthHookManager(this);
         // Register Auth Hooks
         if (getServer().getPluginManager().getPlugin("AuthMe") != null) {
@@ -68,7 +72,7 @@ public final class VortexiaCore extends JavaPlugin {
 
         loggerService.info("Server online mode: " + (identityUtil.isOnlineMode() ? "ENABLED" : "DISABLED"));
 
-        VortexiaAPI.initialize(this);
+        VortexiaProvider.register(new CoreVortexiaAPI(this));
 
         getServer().getPluginManager().registerEvents(
                 new PlayerListener(this),
@@ -87,6 +91,9 @@ public final class VortexiaCore extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (addonManager != null) {
+            addonManager.shutdown();
+        }
         if (storageManager != null) {
             storageManager.shutdown();
         }
@@ -127,5 +134,9 @@ public final class VortexiaCore extends JavaPlugin {
 
     public me.alikuxac.vortexia.core.hook.AuthHookManager getAuthHookManager() {
         return authHookManager;
+    }
+
+    public me.alikuxac.vortexia.core.addon.CoreAddonManager getAddonManager() {
+        return addonManager;
     }
 }

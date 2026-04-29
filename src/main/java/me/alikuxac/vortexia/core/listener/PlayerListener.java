@@ -2,8 +2,8 @@
 package me.alikuxac.vortexia.core.listener;
 
 import me.alikuxac.vortexia.core.VortexiaCore;
-import me.alikuxac.vortexia.core.event.IdentityLoadEvent;
-import me.alikuxac.vortexia.core.storage.model.Identity;
+import me.alikuxac.vortexia.api.event.IdentityLoadEvent;
+import me.alikuxac.vortexia.api.model.Identity;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
