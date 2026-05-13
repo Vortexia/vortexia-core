@@ -27,6 +27,13 @@ identity:
     # Require security PIN if player UUID changes but name remains same
     require-pin: true
 
+# Citizen Card Settings
+citizen-card:
+  # Item material for the card
+  material: "PAPER"
+  # Custom Model Data (0 to disable, set if using resource pack)
+  custom-model-data: 0
+
 # Storage Configuration
 storage:
   # Storage type: SQLITE or MYSQL

@@ -24,12 +24,10 @@ public class AuthHookManager {
     }
 
     /**
-     * Kiem tra xem nguoi choi co dang bi pending login tu bat ky auth plugin nao
-     * khong.
+     * Check if player is get pending login from any auth plugin
      * 
-     * @param player Nguoi choi can kiem tra
-     * @return true neu nguoi choi CHUA login xong (dang cho login/register), false
-     *         neu khong co plugin auth nao hoac da login xong.
+     * @param player Player need check
+     * @return true if player is get pending login, false
      */
     public boolean isWaitingForLogin(Player player) {
         if (hooks.isEmpty()) {
@@ -37,11 +35,24 @@ public class AuthHookManager {
         }
 
         for (IAuthHook hook : hooks) {
-            // Neu co it nhat 1 hook ma player chua authenticate -> dang cho login
+            // If there is at least one hook that the player has not authenticated 
             if (!hook.isAuthenticated(player)) {
                 return true;
             }
         }
         return false;
+    }
+
+    public boolean isAuthenticated(Player player) {
+        if (hooks.isEmpty()) {
+            return true; // No auth hooks, assume authenticated
+        }
+
+        for (IAuthHook hook : hooks) {
+            if (!hook.isAuthenticated(player)) {
+                return false;
+            }
+        }
+        return true;
     }
 }

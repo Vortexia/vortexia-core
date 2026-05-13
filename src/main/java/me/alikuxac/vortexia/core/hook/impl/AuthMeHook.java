@@ -3,78 +3,64 @@ package me.alikuxac.vortexia.core.hook.impl;
 
 import fr.xephi.authme.api.v3.AuthMeApi;
 import fr.xephi.authme.events.LoginEvent;
-import fr.xephi.authme.events.RegisterEvent;
+import fr.xephi.authme.events.LogoutEvent;
 import me.alikuxac.vortexia.core.VortexiaCore;
 import me.alikuxac.vortexia.core.hook.IAuthHook;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 
 public class AuthMeHook implements IAuthHook, Listener {
 
     private final VortexiaCore plugin;
-    private boolean isHooked = false;
+    private final AuthMeApi authMeApi;
 
     public AuthMeHook(VortexiaCore plugin) {
         this.plugin = plugin;
-        try {
-            Class.forName("fr.xephi.authme.api.v3.AuthMeApi");
-            this.isHooked = true;
-            Bukkit.getPluginManager().registerEvents(this, plugin);
-        } catch (ClassNotFoundException e) {
-            this.isHooked = false;
-        }
+        this.authMeApi = AuthMeApi.getInstance();
     }
 
     @Override
     public boolean isInstalled() {
-        return isHooked;
+        return Bukkit.getPluginManager().getPlugin("AuthMe") != null;
     }
 
     @Override
     public boolean isAuthenticated(Player player) {
-        if (!isHooked)
-            return true; // If not hooked, assume true so we don't block
-        return AuthMeApi.getInstance().isAuthenticated(player);
+        return authMeApi.isAuthenticated(player);
     }
 
     @Override
     public boolean isRegistered(Player player) {
-        if (!isHooked)
-            return true;
-        return AuthMeApi.getInstance().isRegistered(player.getName());
+        return authMeApi.isRegistered(player.getName());
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onLogin(LoginEvent event) {
-        // Trigger PIN logic after successful login
-        handleDelayedPinPrompt(event.getPlayer());
+    public void register() {
+        plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onRegister(RegisterEvent event) {
-        // Trigger PIN logic after successful register
-        handleDelayedPinPrompt(event.getPlayer());
+    @EventHandler
+    public void onAuthMeLogin(LoginEvent event) {
+        Player player = event.getPlayer();
+        plugin.getLoggerService().debug("AuthMe login detected for " + player.getName());
+        
+        // After AuthMe login, we might still need PIN verification
+        if (!plugin.getSecurityManager().isAuthenticated(player)) {
+            plugin.getStorageManager().getCache().getByUuid(player.getUniqueId()).ifPresent(identity -> {
+                if (identity.getPin() == null || identity.getPin().isEmpty()) {
+                    player.sendMessage(Component.text("AuthMe login successful! Now please set up your security PIN using /pin setup <new_pin>", NamedTextColor.YELLOW));
+                } else {
+                    player.sendMessage(Component.text("AuthMe login successful! Now please verify your PIN using /pin verify <your_pin>", NamedTextColor.YELLOW));
+                }
+            });
+        }
     }
 
-    private void handleDelayedPinPrompt(Player player) {
-        Bukkit.getScheduler().runTask(plugin, () -> {
-            // Re-trigger the logic in PlayerListener manually now that auth is complete
-            if (!plugin.getSecurityManager().isAuthenticated(player)) {
-                plugin.getStorageManager().getCache().getByUuid(player.getUniqueId()).ifPresent(identity -> {
-                    if (identity.getPin() == null || identity.getPin().isEmpty()) {
-                        player.sendMessage(net.kyori.adventure.text.Component.text(
-                                "Bạn cần cài đặt Mã PIN cấp 2 để bảo vệ tài khoản (dùng /pin setup <6-digits>).",
-                                net.kyori.adventure.text.format.NamedTextColor.YELLOW));
-                    } else {
-                        player.sendMessage(net.kyori.adventure.text.Component.text(
-                                "Tài khoản đang được bảo vệ. Vui lòng xác thực mã PIN bằng /pin verify <digits>.",
-                                net.kyori.adventure.text.format.NamedTextColor.YELLOW));
-                    }
-                });
-            }
-        });
+    @EventHandler
+    public void onAuthMeLogout(LogoutEvent event) {
+        plugin.getSecurityManager().clear(event.getPlayer());
     }
 }

@@ -16,8 +16,6 @@ import me.alikuxac.vortexia.core.VortexiaCore;
 import me.alikuxac.vortexia.api.model.Identity;
 
 public class IdentityCache {
-
-  private final VortexiaCore plugin;
   private final Cache<UUID, Identity> uuidCache;
   private final Cache<String, Identity> nameCache;
   private final Cache<String, Identity> citizenIdCache;
@@ -26,7 +24,6 @@ public class IdentityCache {
   private final boolean enabled;
 
   public IdentityCache(VortexiaCore plugin) {
-    this.plugin = plugin;
     this.enabled = plugin.getConfig().getBoolean("cache.enabled", true);
 
     if (!enabled) {

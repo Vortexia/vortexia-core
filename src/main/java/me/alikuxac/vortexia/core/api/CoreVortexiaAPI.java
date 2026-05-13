@@ -136,4 +136,19 @@ public class CoreVortexiaAPI implements VortexiaAPI {
     public void clearCache() {
         plugin.getStorageManager().getCache().clear();
     }
+
+    @Override
+    public CompletableFuture<Optional<String>> getMetadata(UUID uuid, String key) {
+        return plugin.getStorageManager().getMetadata(uuid, key);
+    }
+
+    @Override
+    public CompletableFuture<Void> setMetadata(UUID uuid, String key, String value) {
+        return plugin.getStorageManager().setMetadata(uuid, key, value);
+    }
+
+    @Override
+    public CompletableFuture<Void> removeMetadata(UUID uuid, String key) {
+        return plugin.getStorageManager().removeMetadata(uuid, key);
+    }
 }

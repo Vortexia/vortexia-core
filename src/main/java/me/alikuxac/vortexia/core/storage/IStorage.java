@@ -27,5 +27,12 @@ public interface IStorage {
 
   CompletableFuture<Boolean> updatePremiumUuid(UUID uuid, UUID premiumUuid);
 
+  // Metadata operations
+  CompletableFuture<Optional<String>> getMetadata(UUID uuid, String key);
+
+  CompletableFuture<Void> saveMetadata(UUID uuid, String key, String value);
+
+  CompletableFuture<Void> deleteMetadata(UUID uuid, String key);
+
   boolean isConnected();
 }

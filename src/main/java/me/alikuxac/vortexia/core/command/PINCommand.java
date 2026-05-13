@@ -23,11 +23,54 @@ public class PINCommand implements BaseCommand {
         .withAliases("auth", "password")
         .withPermission("vortexia.command.pin")
         .executesPlayer((player, args) -> {
-          player.sendMessage(Component.text("Usage: /pin <setup|verify> <digits>", NamedTextColor.RED));
+          plugin.getStorageManager().getIdentity(player.getUniqueId()).thenAccept(optIdentity -> {
+            if (optIdentity.isPresent() && optIdentity.get().getPin() != null && !optIdentity.get().getPin().isEmpty()) {
+              if (plugin.getSecurityManager().isAuthenticated(player)) {
+                player.sendMessage(Component.text("You are already authenticated. Use /pin change to update your PIN.", NamedTextColor.GREEN));
+              } else {
+                player.sendMessage(Component.text("Please authenticate using /pin verify <your_pin>", NamedTextColor.YELLOW));
+              }
+            } else {
+              player.sendMessage(Component.text("Please set up your security PIN using /pin setup <new_pin>", NamedTextColor.YELLOW));
+            }
+          });
         })
         .withSubcommand(setupSubcommand())
         .withSubcommand(verifySubcommand())
+        .withSubcommand(changeSubcommand())
         .register();
+  }
+
+  private CommandAPICommand changeSubcommand() {
+    return new CommandAPICommand("change")
+        .withArguments(new StringArgument("old_pin"))
+        .withArguments(new StringArgument("new_pin"))
+        .executesPlayer((player, args) -> {
+          String oldPin = (String) args.get("old_pin");
+          String newPin = (String) args.get("new_pin");
+
+          if (newPin == null || newPin.length() < 4) {
+            player.sendMessage(Component.text("New PIN must be at least 4 digits!", NamedTextColor.RED));
+            return;
+          }
+
+          plugin.getStorageManager().getIdentity(player.getUniqueId()).thenAccept(optIdentity -> {
+            if (optIdentity.isEmpty() || optIdentity.get().getPin() == null) {
+              player.sendMessage(Component.text("No PIN found. Use /pin setup <pin> first.", NamedTextColor.RED));
+              return;
+            }
+
+            String storedHash = optIdentity.get().getPin();
+            if (PINUtil.verify(oldPin, storedHash)) {
+              String newHashed = PINUtil.hash(newPin);
+              plugin.getIdentityMigrationHelper().createOrUpdateIdentity(player, newHashed).thenRun(() -> {
+                player.sendMessage(Component.text("PIN changed successfully!", NamedTextColor.GREEN));
+              });
+            } else {
+              player.sendMessage(Component.text("Incorrect current PIN!", NamedTextColor.RED));
+            }
+          });
+        });
   }
 
   private CommandAPICommand setupSubcommand() {
@@ -45,7 +88,7 @@ public class PINCommand implements BaseCommand {
             if (optIdentity.isPresent() && optIdentity.get().getPin() != null
                 && !optIdentity.get().getPin().isEmpty()) {
               player.sendMessage(
-                  Component.text("PIN already set! Use /pin verify if you need to log in.", NamedTextColor.RED));
+                  Component.text("PIN already set! Use /pin verify <pin> if you need to log in.", NamedTextColor.RED));
               return;
             }
 
@@ -68,7 +111,7 @@ public class PINCommand implements BaseCommand {
 
           plugin.getStorageManager().getIdentity(player.getUniqueId()).thenAccept(optIdentity -> {
             if (optIdentity.isEmpty() || optIdentity.get().getPin() == null) {
-              player.sendMessage(Component.text("No PIN found for this account. Use /pin setup.", NamedTextColor.RED));
+              player.sendMessage(Component.text("No PIN found for this account. Use /pin setup <pin>.", NamedTextColor.RED));
               return;
             }
 

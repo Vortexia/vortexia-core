@@ -239,4 +239,16 @@ public class StorageManager {
   public boolean isConnected() {
     return storage != null && storage.isConnected();
   }
+
+  public CompletableFuture<Optional<String>> getMetadata(UUID uuid, String key) {
+    return storage.getMetadata(uuid, key);
+  }
+
+  public CompletableFuture<Void> setMetadata(UUID uuid, String key, String value) {
+    return storage.saveMetadata(uuid, key, value);
+  }
+
+  public CompletableFuture<Void> removeMetadata(UUID uuid, String key) {
+    return storage.deleteMetadata(uuid, key);
+  }
 }

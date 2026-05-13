@@ -3,9 +3,10 @@ package me.alikuxac.vortexia.core.storage.impl;
 
 import java.io.File;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.PreparedStatement;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -33,10 +34,8 @@ public class SQLiteStorage implements IStorage {
       )
       """;
 
-  private static final String CREATE_INDEX = """
-      CREATE INDEX IF NOT EXISTS idx_name ON vortexia_identities(name);
-      CREATE UNIQUE INDEX IF NOT EXISTS idx_citizen_id ON vortexia_identities(citizen_id);
-      """;
+  private static final String CREATE_INDEX_NAME = "CREATE INDEX IF NOT EXISTS idx_name ON vortexia_identities(name)";
+  private static final String CREATE_INDEX_CITIZEN = "CREATE UNIQUE INDEX IF NOT EXISTS idx_citizen_id ON vortexia_identities(citizen_id)";
 
   private static final String INSERT_IDENTITY = """
       INSERT OR REPLACE INTO vortexia_identities (uuid, premium_uuid, citizen_id, name, pin, created_at, updated_at)
@@ -79,6 +78,29 @@ public class SQLiteStorage implements IStorage {
       WHERE uuid = ?
       """;
 
+  private static final String CREATE_METADATA_TABLE = """
+      CREATE TABLE IF NOT EXISTS vortexia_metadata (
+          uuid VARCHAR(36) NOT NULL,
+          meta_key VARCHAR(64) NOT NULL,
+          meta_value TEXT,
+          PRIMARY KEY (uuid, meta_key),
+          FOREIGN KEY (uuid) REFERENCES vortexia_identities(uuid) ON DELETE CASCADE
+      )
+      """;
+
+  private static final String SELECT_METADATA = """
+      SELECT meta_value FROM vortexia_metadata WHERE uuid = ? AND meta_key = ?
+      """;
+
+  private static final String INSERT_METADATA = """
+      INSERT OR REPLACE INTO vortexia_metadata (uuid, meta_key, meta_value)
+      VALUES (?, ?, ?)
+      """;
+
+  private static final String DELETE_METADATA = """
+      DELETE FROM vortexia_metadata WHERE uuid = ? AND meta_key = ?
+      """;
+
   private final VortexiaCore plugin;
   private final StorageConfig config;
   private HikariDataSource dataSource;
@@ -117,11 +139,17 @@ public class SQLiteStorage implements IStorage {
 
   private void createTables() throws SQLException {
     try (Connection conn = dataSource.getConnection();
-        PreparedStatement createTable = conn.prepareStatement(CREATE_TABLE);
-        PreparedStatement createIndex = conn.prepareStatement(CREATE_INDEX)) {
-
-      createTable.executeUpdate();
-      createIndex.executeUpdate();
+        Statement stmt = conn.createStatement()) {
+      
+      // 1. Create identities table first
+      stmt.execute(CREATE_TABLE);
+      
+      // 2. Create indexes after table exists
+      stmt.execute(CREATE_INDEX_NAME);
+      stmt.execute(CREATE_INDEX_CITIZEN);
+      
+      // 3. Create metadata table
+      stmt.execute(CREATE_METADATA_TABLE);
     }
   }
 
@@ -280,6 +308,60 @@ public class SQLiteStorage implements IStorage {
   @Override
   public boolean isConnected() {
     return dataSource != null && !dataSource.isClosed();
+  }
+
+  @Override
+  public CompletableFuture<Optional<String>> getMetadata(UUID uuid, String key) {
+    return CompletableFuture.supplyAsync(() -> {
+      try (Connection conn = dataSource.getConnection();
+          PreparedStatement stmt = conn.prepareStatement(SELECT_METADATA)) {
+
+        stmt.setString(1, uuid.toString());
+        stmt.setString(2, key);
+
+        try (ResultSet rs = stmt.executeQuery()) {
+          if (rs.next()) {
+            return Optional.ofNullable(rs.getString("meta_value"));
+          }
+        }
+      } catch (SQLException e) {
+        throw new RuntimeException("Failed to get metadata", e);
+      }
+      return Optional.empty();
+    });
+  }
+
+  @Override
+  public CompletableFuture<Void> saveMetadata(UUID uuid, String key, String value) {
+    return CompletableFuture.runAsync(() -> {
+      try (Connection conn = dataSource.getConnection();
+          PreparedStatement stmt = conn.prepareStatement(INSERT_METADATA)) {
+
+        stmt.setString(1, uuid.toString());
+        stmt.setString(2, key);
+        stmt.setString(3, value);
+
+        stmt.executeUpdate();
+      } catch (SQLException e) {
+        throw new RuntimeException("Failed to save metadata", e);
+      }
+    });
+  }
+
+  @Override
+  public CompletableFuture<Void> deleteMetadata(UUID uuid, String key) {
+    return CompletableFuture.runAsync(() -> {
+      try (Connection conn = dataSource.getConnection();
+          PreparedStatement stmt = conn.prepareStatement(DELETE_METADATA)) {
+
+        stmt.setString(1, uuid.toString());
+        stmt.setString(2, key);
+
+        stmt.executeUpdate();
+      } catch (SQLException e) {
+        throw new RuntimeException("Failed to delete metadata", e);
+      }
+    });
   }
 
   private Identity mapResultSetToIdentity(ResultSet rs) throws SQLException {

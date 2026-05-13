@@ -5,19 +5,16 @@ import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.EntitySelectorArgument;
 import me.alikuxac.vortexia.core.VortexiaCore;
 import me.alikuxac.vortexia.api.model.Identity;
+import me.alikuxac.vortexia.core.gui.ProfileGUI;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.entity.Player;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 public class ProfileCommand implements BaseCommand {
 
   private final VortexiaCore plugin;
-  private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy")
-      .withZone(ZoneId.systemDefault());
 
   public ProfileCommand(VortexiaCore plugin) {
     this.plugin = plugin;
@@ -29,14 +26,14 @@ public class ProfileCommand implements BaseCommand {
         .withAliases("profile", "id")
         .withPermission("vortexia.command.cccd")
         .executesPlayer((player, args) -> {
-          showProfile(player, player);
+          handleView(player, null);
         })
         .withSubcommand(new CommandAPICommand("view")
             .withPermission("vortexia.command.cccd.view")
-            .withArguments(new EntitySelectorArgument.OnePlayer("target"))
+            .withOptionalArguments(new EntitySelectorArgument.OnePlayer("target"))
             .executesPlayer((player, args) -> {
               Player target = (Player) args.get("target");
-              showProfile(player, target);
+              handleView(player, target);
             }))
         .withSubcommand(new CommandAPICommand("get")
             .withAliases("withdraw")
@@ -47,6 +44,34 @@ public class ProfileCommand implements BaseCommand {
         .register();
   }
 
+  private void handleView(Player viewer, Player target) {
+    if (target != null) {
+      showProfile(viewer, target);
+      return;
+    }
+
+    // Check if holding a card
+    ItemStack item = viewer.getInventory().getItemInMainHand();
+    if (plugin.getCitizenCardManager().isCitizenCard(item)) {
+      String cid = plugin.getCitizenCardManager().getCitizenId(item);
+      if (cid != null) {
+        plugin.getStorageManager().getIdentityByCitizenId(cid).thenAccept(optIdentity -> {
+          if (optIdentity.isPresent()) {
+            plugin.getSchedulerService().runEntity(viewer, () -> {
+              new ProfileGUI(plugin).open(viewer, optIdentity.get());
+            });
+          } else {
+            viewer.sendMessage(Component.text("Identity on card not found in database.", NamedTextColor.RED));
+          }
+        });
+        return;
+      }
+    }
+
+    // Default to self
+    showProfile(viewer, viewer);
+  }
+
   private void showProfile(Player viewer, Player target) {
     plugin.getStorageManager().getIdentity(target.getUniqueId()).thenAccept(optIdentity -> {
       if (optIdentity.isEmpty()) {
@@ -54,19 +79,9 @@ public class ProfileCommand implements BaseCommand {
         return;
       }
 
-      Identity identity = optIdentity.get();
-      String citizenId = identity.getCitizenId() != null ? identity.getCitizenId() : "Pending...";
-      String name = identity.getName();
-      String date = DATE_FORMATTER.format(Instant.ofEpochMilli(identity.getCreatedAt()));
-
-      viewer.sendMessage(Component.text("⎯⎯⎯⎯⎯⎯ [ Citizen Profile ] ⎯⎯⎯⎯⎯⎯", NamedTextColor.GOLD));
-      viewer.sendMessage(Component.text("Name: ", NamedTextColor.GRAY)
-          .append(Component.text(name, NamedTextColor.WHITE)));
-      viewer.sendMessage(Component.text("Citizen ID: ", NamedTextColor.GRAY)
-          .append(Component.text(citizenId, NamedTextColor.YELLOW)));
-      viewer.sendMessage(Component.text("Issued Date: ", NamedTextColor.GRAY)
-          .append(Component.text(date, NamedTextColor.WHITE)));
-      viewer.sendMessage(Component.text("⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯", NamedTextColor.GOLD));
+      plugin.getSchedulerService().runEntity(viewer, () -> {
+        new ProfileGUI(plugin).open(viewer, optIdentity.get());
+      });
     });
   }
 

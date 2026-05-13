@@ -3,6 +3,8 @@ package me.alikuxac.vortexia.core;
 
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPIPaperConfig;
+import com.github.retrooper.packetevents.PacketEvents;
+import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import me.alikuxac.vortexia.api.VortexiaProvider;
@@ -25,19 +27,28 @@ public final class VortexiaCore extends JavaPlugin {
     private IdentityUtil identityUtil;
     private me.alikuxac.vortexia.core.storage.util.IdentityMigrationHelper identityMigrationHelper;
     private me.alikuxac.vortexia.core.item.CitizenCardManager citizenCardManager;
+    private me.alikuxac.vortexia.core.gui.SecurityGUI securityGUI;
     private me.alikuxac.vortexia.core.service.SecurityManager securityManager;
     private me.alikuxac.vortexia.core.hook.AuthHookManager authHookManager;
+    private me.alikuxac.vortexia.core.service.SchedulerService schedulerService;
+    private me.alikuxac.vortexia.core.service.ProxySyncService proxySyncService;
     private me.alikuxac.vortexia.core.addon.CoreAddonManager addonManager;
 
     @Override
     public void onLoad() {
         instance = this;
+        // CommandAPI
         try {
             CommandAPI.onLoad(new CommandAPIPaperConfig(this).silentLogs(true).verboseOutput(true));
         } catch (Exception e) {
             getLogger().severe("VortexiaCore - Failed to load CommandAPI: " + e.getMessage());
             e.printStackTrace();
         }
+        
+        // PacketEvents
+        PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this));
+        PacketEvents.getAPI().getSettings().checkForUpdates(false);
+        PacketEvents.getAPI().load();
     }
 
     @Override
@@ -46,6 +57,7 @@ public final class VortexiaCore extends JavaPlugin {
         this.configManager.loadConfig();
 
         this.loggerService = new LoggerService(this);
+        this.schedulerService = new me.alikuxac.vortexia.core.service.SchedulerService(this);
         this.identityUtil = new IdentityUtil(this);
 
         this.storageManager = new StorageManager(this);
@@ -60,14 +72,22 @@ public final class VortexiaCore extends JavaPlugin {
 
         this.identityMigrationHelper = new me.alikuxac.vortexia.core.storage.util.IdentityMigrationHelper(this);
         this.citizenCardManager = new me.alikuxac.vortexia.core.item.CitizenCardManager(this);
+        this.securityGUI = new me.alikuxac.vortexia.core.gui.SecurityGUI(this);
         this.securityManager = new me.alikuxac.vortexia.core.service.SecurityManager(this);
+        this.proxySyncService = new me.alikuxac.vortexia.core.service.ProxySyncService(this);
+        this.authHookManager = new me.alikuxac.vortexia.core.hook.AuthHookManager(this);
 
+        // Initialize PacketEvents
+        PacketEvents.getAPI().init();
+        PacketEvents.getAPI().getEventManager().registerListener(new me.alikuxac.vortexia.core.listener.SecurityPacketListener(this));
+        
         this.addonManager = new me.alikuxac.vortexia.core.addon.CoreAddonManager(this);
 
-        this.authHookManager = new me.alikuxac.vortexia.core.hook.AuthHookManager(this);
         // Register Auth Hooks
         if (getServer().getPluginManager().getPlugin("AuthMe") != null) {
-            this.authHookManager.registerHook(new me.alikuxac.vortexia.core.hook.impl.AuthMeHook(this));
+            me.alikuxac.vortexia.core.hook.impl.AuthMeHook authMeHook = new me.alikuxac.vortexia.core.hook.impl.AuthMeHook(this);
+            authMeHook.register();
+            this.authHookManager.registerHook(authMeHook);
         }
 
         loggerService.info("Server online mode: " + (identityUtil.isOnlineMode() ? "ENABLED" : "DISABLED"));
@@ -91,6 +111,7 @@ public final class VortexiaCore extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        PacketEvents.getAPI().terminate();
         if (addonManager != null) {
             addonManager.shutdown();
         }
@@ -128,6 +149,10 @@ public final class VortexiaCore extends JavaPlugin {
         return citizenCardManager;
     }
 
+    public me.alikuxac.vortexia.core.gui.SecurityGUI getSecurityGUI() {
+        return securityGUI;
+    }
+
     public me.alikuxac.vortexia.core.service.SecurityManager getSecurityManager() {
         return securityManager;
     }
@@ -138,5 +163,13 @@ public final class VortexiaCore extends JavaPlugin {
 
     public me.alikuxac.vortexia.core.addon.CoreAddonManager getAddonManager() {
         return addonManager;
+    }
+
+    public me.alikuxac.vortexia.core.service.SchedulerService getSchedulerService() {
+        return schedulerService;
+    }
+
+    public me.alikuxac.vortexia.core.service.ProxySyncService getProxySyncService() {
+        return proxySyncService;
     }
 }

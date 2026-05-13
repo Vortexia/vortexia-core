@@ -2,119 +2,69 @@
 package me.alikuxac.vortexia.core.listener;
 
 import me.alikuxac.vortexia.core.VortexiaCore;
-import me.alikuxac.vortexia.api.event.IdentityLoadEvent;
-import me.alikuxac.vortexia.api.model.Identity;
-import org.bukkit.Bukkit;
+import me.alikuxac.vortexia.core.storage.util.IdentityUtil;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-
-import java.util.Optional;
 
 public class PlayerListener implements Listener {
 
   private final VortexiaCore plugin;
+  private final IdentityUtil identityUtil;
 
   public PlayerListener(VortexiaCore plugin) {
     this.plugin = plugin;
+    this.identityUtil = plugin.getIdentityUtil();
   }
 
   @EventHandler(priority = EventPriority.LOWEST)
   public void onPlayerJoin(PlayerJoinEvent event) {
     Player player = event.getPlayer();
 
-    if (!plugin.getStorageManager().getCache().isEnabled()) {
-      return;
-    }
-
-    boolean asyncLoading = plugin.getConfig().getBoolean("cache.async-loading", true);
-
-    // Force unauthenticated status immediately (AIO-440)
+    // Secure by default: mark as unauthenticated immediately
     plugin.getSecurityManager().markAsUnauthenticated(player);
 
-    if (asyncLoading) {
-      loadIdentityAsync(player);
-    } else {
-      loadIdentitySync(player);
-    }
-  }
+    plugin.getLoggerService().debug("Player joining: " + player.getName());
 
-  @EventHandler(priority = EventPriority.MONITOR)
-  public void onPlayerQuit(PlayerQuitEvent event) {
-    if (!plugin.getStorageManager().getCache().isEnabled()) {
-      return;
-    }
-
-    boolean invalidateOnQuit = plugin.getConfig().getBoolean("cache.invalidate-on-quit", false);
-
-    if (invalidateOnQuit) {
-      plugin.getStorageManager().getCache().invalidate(event.getPlayer().getUniqueId());
-    }
-  }
-
-  private void loadIdentityAsync(Player player) {
-    plugin.getIdentityMigrationHelper().findOrMigrateIdentity(player)
-        .thenAccept(optIdentity -> {
-          if (optIdentity.isPresent()) {
-            Identity identity = optIdentity.get();
-
-            IdentityLoadEvent loadEvent = new IdentityLoadEvent(
-                identity,
-                IdentityLoadEvent.LoadSource.DATABASE);
-            Bukkit.getScheduler().runTask(plugin, () -> {
-              Bukkit.getPluginManager().callEvent(loadEvent);
-            });
-
-            plugin.getLoggerService().debug(
-                "Loaded identity for " + player.getName() + " into cache");
-
-            // Auth check (MANDATORY PIN Plan)
-            Bukkit.getScheduler().runTask(plugin, () -> {
-              if (plugin.getAuthHookManager().isWaitingForLogin(player)) {
-                // Delay prompt to AuthMeHook
-                return;
-              }
-
-              if (identity.getPin() == null || identity.getPin().isEmpty()) {
-                player.sendMessage(net.kyori.adventure.text.Component.text(
-                    "This account is not secured! Use /pin setup <6-digits> to set your PIN.",
-                    net.kyori.adventure.text.format.NamedTextColor.YELLOW));
-              } else {
-                player.sendMessage(net.kyori.adventure.text.Component.text(
-                    "Please verify your identity using /pin verify <digits>.",
-                    net.kyori.adventure.text.format.NamedTextColor.YELLOW));
-              }
-            });
+    // Identity check
+    plugin.getStorageManager().getIdentity(player.getUniqueId()).thenAccept(optIdentity -> {
+      if (optIdentity.isPresent()) {
+        plugin.getLoggerService().debug("Found existing identity for " + player.getName());
+        checkAndRequestAuth(player);
+      } else {
+        // Try searching by name (for migrations)
+        plugin.getStorageManager().getIdentityByName(player.getName()).thenAccept(optByName -> {
+          if (optByName.isPresent()) {
+            plugin.getLoggerService().debug("Found identity by name for " + player.getName() + " (migration needed)");
+            checkAndRequestAuth(player);
           } else {
             // New player logic
-            plugin.getSecurityManager().markAsUnauthenticated(player);
-            Bukkit.getScheduler().runTask(plugin, () -> {
-              player.sendMessage(net.kyori.adventure.text.Component.text(
-                  "Welcome to Vortexia! Please secure your account with /pin setup <6-digits>.",
-                  net.kyori.adventure.text.format.NamedTextColor.GREEN));
-            });
-            plugin.getLoggerService().debug(
-                "No identity found for " + player.getName() + " (new player will be created on save)");
+            player.sendMessage(Component.text("Welcome to Vortexia! Please set up a security PIN using /pin setup <4-digit-pin>", NamedTextColor.YELLOW));
+            plugin.getLoggerService().debug("No identity found for " + player.getName() + " (new player will be created on save)");
           }
-        })
-        .exceptionally(throwable -> {
-          plugin.getLoggerService().warn(
-              "Failed to load identity for " + player.getName() + ": " + throwable.getMessage());
-          return null;
         });
+      }
+    });
   }
 
-  private void loadIdentitySync(Player player) {
-    Optional<Identity> cached = plugin.getStorageManager().getCache().getByUuid(player.getUniqueId());
+  private void checkAndRequestAuth(Player player) {
+    plugin.getStorageManager().getCache().getByUuid(player.getUniqueId()).ifPresent(identity -> {
+      // Check online mode bypass
+      if (identityUtil.isOnlineMode() && identity.hasPremiumUuid()) {
+        plugin.getLoggerService().debug("Premium player " + player.getName() + " detected, skipping PIN.");
+        plugin.getSecurityManager().authenticate(player);
+        return;
+      }
 
-    if (cached.isPresent()) {
-      IdentityLoadEvent loadEvent = new IdentityLoadEvent(
-          cached.get(),
-          IdentityLoadEvent.LoadSource.CACHE);
-      Bukkit.getPluginManager().callEvent(loadEvent);
-    }
+      if (identity.getPin() == null || identity.getPin().isEmpty()) {
+        player.sendMessage(Component.text("Please set up your security PIN using /pin setup <new_pin>", NamedTextColor.YELLOW));
+      } else {
+        player.sendMessage(Component.text("This account is protected. Please verify your PIN using /pin verify <your_pin>", NamedTextColor.YELLOW));
+      }
+    });
   }
 }
