@@ -21,24 +21,24 @@ public class CoreAddonManager implements AddonManager {
 
     @Override
     public void registerAddon(VortexiaAddon addon) {
-        if (addons.containsKey(addon.getName())) {
-            plugin.getLogger().warning("Addon " + addon.getName() + " is already registered.");
+        if (addons.containsKey(addon.getAddonName())) {
+            plugin.getLogger().warning("Addon " + addon.getAddonName() + " is already registered.");
             return;
         }
 
-        addons.put(addon.getName(), addon);
+        addons.put(addon.getAddonName(), addon);
         try {
             addon.onAddonEnable();
-            plugin.getLogger().info("Successfully registered Addon: " + addon.getName() + " v" + addon.getVersion());
+            plugin.getLogger().info("Successfully registered Addon: " + addon.getAddonName() + " v" + addon.getVersion());
         } catch (Exception e) {
-            plugin.getLogger().severe("Failed to enable Addon: " + addon.getName());
+            plugin.getLogger().severe("Failed to enable Addon: " + addon.getAddonName());
             e.printStackTrace();
         }
     }
 
     @Override
     public void unregisterAddon(VortexiaAddon addon) {
-        unregisterAddon(addon.getName());
+        unregisterAddon(addon.getAddonName());
     }
 
     @Override
@@ -68,7 +68,7 @@ public class CoreAddonManager implements AddonManager {
 
     public void shutdown() {
         for (VortexiaAddon addon : addons.values()) {
-            unregisterAddon(addon.getName());
+            unregisterAddon(addon.getAddonName());
         }
     }
 }

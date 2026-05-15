@@ -3,8 +3,11 @@ package me.alikuxac.vortexia.core.api;
 
 import me.alikuxac.vortexia.api.VortexiaAPI;
 import me.alikuxac.vortexia.api.addon.AddonManager;
+import me.alikuxac.vortexia.api.scheduler.TaskEngine;
+import me.alikuxac.vortexia.api.storage.StorageManager;
 import me.alikuxac.vortexia.api.model.Identity;
 import me.alikuxac.vortexia.core.VortexiaCore;
+
 import org.bukkit.entity.Player;
 
 import java.util.Optional;
@@ -17,6 +20,16 @@ public class CoreVortexiaAPI implements VortexiaAPI {
 
     public CoreVortexiaAPI(VortexiaCore plugin) {
         this.plugin = plugin;
+    }
+
+    @Override
+    public TaskEngine getTaskEngine() {
+        return plugin.getTaskEngine();
+    }
+
+    @Override
+    public StorageManager getStorageManager() {
+        return plugin.getStorageManager();
     }
 
     @Override
@@ -151,4 +164,23 @@ public class CoreVortexiaAPI implements VortexiaAPI {
     public CompletableFuture<Void> removeMetadata(UUID uuid, String key) {
         return plugin.getStorageManager().removeMetadata(uuid, key);
     }
+
+    @Override
+    public CompletableFuture<Optional<String>> getBlockMetadata(org.bukkit.Location loc, String key) {
+        String locKey = loc.getWorld().getName() + "_" + loc.getBlockX() + "_" + loc.getBlockY() + "_" + loc.getBlockZ();
+        return plugin.getStorageManager().getMetadata(java.util.UUID.nameUUIDFromBytes(locKey.getBytes()), key);
+    }
+
+    @Override
+    public CompletableFuture<Void> setBlockMetadata(org.bukkit.Location loc, String key, String value) {
+        String locKey = loc.getWorld().getName() + "_" + loc.getBlockX() + "_" + loc.getBlockY() + "_" + loc.getBlockZ();
+        return plugin.getStorageManager().setMetadata(java.util.UUID.nameUUIDFromBytes(locKey.getBytes()), key, value);
+    }
+
+    @Override
+    public CompletableFuture<Void> removeBlockMetadata(org.bukkit.Location loc, String key) {
+        String locKey = loc.getWorld().getName() + "_" + loc.getBlockX() + "_" + loc.getBlockY() + "_" + loc.getBlockZ();
+        return plugin.getStorageManager().removeMetadata(java.util.UUID.nameUUIDFromBytes(locKey.getBytes()), key);
+    }
+
 }

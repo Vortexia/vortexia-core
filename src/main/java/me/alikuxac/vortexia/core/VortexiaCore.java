@@ -33,6 +33,7 @@ public final class VortexiaCore extends JavaPlugin {
     private me.alikuxac.vortexia.core.service.SchedulerService schedulerService;
     private me.alikuxac.vortexia.core.service.ProxySyncService proxySyncService;
     private me.alikuxac.vortexia.core.addon.CoreAddonManager addonManager;
+    private me.alikuxac.vortexia.core.brain.VortexiaTaskEngine taskEngine;
 
     @Override
     public void onLoad() {
@@ -82,6 +83,7 @@ public final class VortexiaCore extends JavaPlugin {
         PacketEvents.getAPI().getEventManager().registerListener(new me.alikuxac.vortexia.core.listener.SecurityPacketListener(this));
         
         this.addonManager = new me.alikuxac.vortexia.core.addon.CoreAddonManager(this);
+        this.taskEngine = new me.alikuxac.vortexia.core.brain.VortexiaTaskEngine(this);
 
         // Register Auth Hooks
         if (getServer().getPluginManager().getPlugin("AuthMe") != null) {
@@ -114,6 +116,9 @@ public final class VortexiaCore extends JavaPlugin {
         PacketEvents.getAPI().terminate();
         if (addonManager != null) {
             addonManager.shutdown();
+        }
+        if (taskEngine != null) {
+            taskEngine.shutdown();
         }
         if (storageManager != null) {
             storageManager.shutdown();
@@ -171,5 +176,9 @@ public final class VortexiaCore extends JavaPlugin {
 
     public me.alikuxac.vortexia.core.service.ProxySyncService getProxySyncService() {
         return proxySyncService;
+    }
+
+    public me.alikuxac.vortexia.core.brain.VortexiaTaskEngine getTaskEngine() {
+        return taskEngine;
     }
 }

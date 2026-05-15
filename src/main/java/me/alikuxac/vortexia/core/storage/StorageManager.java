@@ -16,7 +16,7 @@ import me.alikuxac.vortexia.core.storage.impl.MySQLStorage;
 import me.alikuxac.vortexia.core.storage.impl.SQLiteStorage;
 import me.alikuxac.vortexia.api.model.Identity;
 
-public class StorageManager {
+public class StorageManager implements me.alikuxac.vortexia.api.storage.StorageManager {
 
   private final VortexiaCore plugin;
   private IStorage storage;

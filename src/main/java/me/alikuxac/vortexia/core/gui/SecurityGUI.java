@@ -1,7 +1,6 @@
 // Developed by alikuxac - Project Vortexia
 package me.alikuxac.vortexia.core.gui;
 
-import me.alikuxac.vortexia.api.model.Identity;
 import me.alikuxac.vortexia.core.VortexiaCore;
 import me.alikuxac.vortexia.core.util.PINUtil;
 import net.kyori.adventure.text.Component;

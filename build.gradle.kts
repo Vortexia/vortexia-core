@@ -10,11 +10,11 @@ val refType = System.getenv("GITHUB_REF_TYPE") ?: "branch"
 version = if (refType == "tag") {
     refName.replaceFirst("v", "")
 } else if (refName == "master" || refName == "main") {
-    "0.2.0"
+    "0.2.1"
 } else if (refName == "development") {
-    "0.2.0-DEV"
+    "0.2.1-DEV"
 } else {
-    "0.2.0-${refName.uppercase()}"
+    "0.2.1-${refName.uppercase()}"
 }
 
 repositories {
@@ -30,7 +30,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.Vortexia:vortexia-api:1.1.0")
+    implementation(project(":vortexia-api"))
     compileOnly("io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT")
     implementation("dev.jorel:commandapi-paper-shade:11.1.0")
     compileOnly("dev.jorel:commandapi-annotations:11.1.0")
@@ -61,9 +61,10 @@ tasks {
     }
 
     processResources {
-        inputs.property("version", project.version)
+        val projectVersion = project.version
+        inputs.property("version", projectVersion)
         filesMatching("**/paper-plugin.yml") {
-            expand("version" to project.version)
+            expand("version" to projectVersion)
         }
     }
 
