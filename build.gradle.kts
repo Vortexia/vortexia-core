@@ -10,11 +10,11 @@ val refType = System.getenv("GITHUB_REF_TYPE") ?: "branch"
 version = if (refType == "tag") {
     refName.replaceFirst("v", "")
 } else if (refName == "master" || refName == "main") {
-    "0.2.1"
+    "1.2.0"
 } else if (refName == "development") {
-    "0.2.1-DEV"
+    "1.2.0-DEV"
 } else {
-    "0.2.1-${refName.uppercase()}"
+    "1.2.0-${refName.uppercase()}"
 }
 
 repositories {
@@ -30,7 +30,7 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":vortexia-api"))
+    implementation("me.alikuxac.vortexia:vortexia-api:1.2.0")
     compileOnly("io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT")
     implementation("dev.jorel:commandapi-paper-shade:11.1.0")
     compileOnly("dev.jorel:commandapi-annotations:11.1.0")
