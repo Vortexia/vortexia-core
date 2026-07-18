@@ -1,0 +1,38 @@
+name: VortexiaCore
+version: ${version}
+main: me.alikuxac.vortexia.core.VortexiaCore
+api-version: '1.21'
+author: Alikuxac
+softdepend: [AuthMe]
+permissions:
+  vortexia.admin:
+    description: "Full administrative access to VortexiaCore"
+    default: op
+    children:
+      vortexia.command.pin: true
+      vortexia.command.cccd: true
+      vortexia.command.cccd.view: true
+      vortexia.command.cccd.get: true
+      vortexia.creative.give: true
+      vortexia.command.restore: true
+  vortexia.command.pin:
+    description: "Access to the /pin command"
+    default: true
+  vortexia.command.cccd:
+    description: "Access to the /cccd command"
+    default: true
+    children:
+      vortexia.command.cccd.view: true
+      vortexia.command.cccd.get: true
+  vortexia.command.cccd.view:
+    description: "View other players' profiles"
+    default: true
+  vortexia.command.cccd.get:
+    description: "Withdraw a Citizen ID card"
+    default: true
+  vortexia.creative.give:
+    description: "Take items from the Guide GUI"
+    default: op
+  vortexia.command.restore:
+    description: "Restore player inventory snapshots"
+    default: op

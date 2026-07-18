@@ -1,0 +1,118 @@
+# ==========================================
+# Vortexia Core - Configuration
+# ==========================================
+
+# System and Display Settings
+system:
+  # Prefix for all chat and console messages
+  prefix: "&8[&bVortexia&8] &f"
+  
+  # Debug Mode: Enable to see detailed logs in console
+  # Useful for development and troubleshooting command registrations
+  debug: false
+
+# Command Management Settings
+commands:
+  # The primary base command for the plugin
+  main-command: "vortexia"
+  # Alternative aliases for quick access
+  aliases: 
+    - "vx"
+
+# Identity & Flex-Mode Settings (For upcoming features)
+identity:
+  flex-mode:
+    # Automatically detect server mode (Online vs Offline)
+    auto-detect: true
+    # Require security PIN if player UUID changes but name remains same
+    require-pin: true
+
+# Citizen Card Settings
+citizen-card:
+  # Item material for the card
+  material: "PAPER"
+  # Custom Model Data (0 to disable, set if using resource pack)
+  custom-model-data: 0
+
+# Storage Configuration
+storage:
+  # Storage type: SQLITE or MYSQL
+  type: "SQLITE"
+  
+  # SQLite Settings (used when type = SQLITE)
+  sqlite:
+    # Database file path (relative to plugin data folder)
+    file: "vortexia.db"
+  
+  # MySQL Settings (used when type = MYSQL)
+  mysql:
+    host: "localhost"
+    port: 3306
+    database: "vortexia"
+    username: "root"
+    password: ""
+    # Connection pool settings
+    pool:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+# Cache Configuration
+cache:
+  # Enable in-memory caching
+  enabled: true
+  
+  # Maximum cache size (number of identities)
+  max-size: 10000
+  
+  # Cache TTL in minutes (0 = no expiration)
+  ttl-minutes: 30
+  
+  # Invalidate cache on player quit
+  invalidate-on-quit: false
+  
+  # Async cache loading
+  async-loading: true
+
+# Basic Message Strings
+messages:
+  no-permission: "&cYou do not have permission to perform this action!"
+  plugin-reloaded: "&aConfiguration has been successfully reloaded."
+  unknown-command: "&cUnknown command. Type /vx help for assistance."
+
+# Permission Display Settings
+permissions:
+  # Show permission descriptions in console on startup
+  log-on-startup: true
+
+# Update Checker Configuration
+update-checker:
+  # Enable automatic update checking on server start
+  enabled: true
+  # Notify players with the 'vortexia.admin' permission when they join
+  notify-admins: true
+
+# WAILA & Display HUD Configuration
+waila:
+  # Enable the WAILA look-at display system
+  enabled: true
+  
+  # The screen position of the WAILA display.
+  # Allowed values (9 positions):
+  #   "top - left", "top - middle", "top - right"
+  #   "center - left", "center - middle", "center - right"
+  #   "bottom - left", "bottom - middle", "bottom - right"
+  position: "top - middle"
+
+# Inventory Synchronization & Backup Settings
+inventory-sync:
+  # The maximum number of historical inventory snapshots to keep per player.
+  # Adjust this value to manage database storage consumption. (Recommended: 5 to 20)
+  keep-snapshots-limit: 10
+  
+  # How often to run periodic inventory auto-saves for all authenticated players (in ticks).
+  # 1200 ticks = 1 minute, 6000 ticks = 5 minutes, 12000 ticks = 10 minutes.
+  # Set to a very high value or disable the system if you want to rely only on Join/Quit.
+  auto-save-interval-ticks: 6000

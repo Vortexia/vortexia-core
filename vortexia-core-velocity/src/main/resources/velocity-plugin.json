@@ -1,0 +1,10 @@
+{
+  "id": "vortexiacore",
+  "name": "VortexiaCore",
+  "version": "${version}",
+  "description": "Multi-platform proxy support for Vortexia core",
+  "authors": [
+    "Alikuxac"
+  ],
+  "main": "me.alikuxac.vortexia.core.velocity.VortexiaVelocity"
+}

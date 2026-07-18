@@ -33,7 +33,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: vortexia-core-dev
-        path: build/libs/*.jar
+        path: "vortexia-core-*/build/libs/*.jar"
 
     - name: Update Dev-Snapshot Tag
       if: github.event_name == 'push' && github.ref == 'refs/heads/development'
@@ -47,7 +47,7 @@ jobs:
       if: github.event_name == 'push' && github.ref == 'refs/heads/development'
       uses: ncipollo/release-action@v1
       with:
-        artifacts: "build/libs/*.jar"
+        artifacts: "vortexia-core-*/build/libs/*.jar"
         tag: "Dev-Snapshot"
         name: "Development Snapshot"
         allowUpdates: true
