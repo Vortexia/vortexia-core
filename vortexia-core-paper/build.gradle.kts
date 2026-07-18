@@ -4,22 +4,10 @@ plugins {
 }
 
 dependencies {
-    val apiRefName = System.getenv("GITHUB_REF_NAME") ?: "LOCAL"
-    val apiRefType = System.getenv("GITHUB_REF_TYPE") ?: "branch"
-    val apiVersion = if (apiRefType == "tag") {
-        apiRefName.replaceFirst("v", "")
-    } else if (apiRefName == "master" || apiRefName == "main") {
-        "1.3.1"
-    } else if (apiRefName == "development") {
-        "1.3.1-DEV"
-    } else {
-        "1.3.1-${apiRefName.uppercase()}"
-    }
-
     if (findProject(":vortexia-api") != null) {
         implementation(project(":vortexia-api"))
     } else {
-        implementation("me.alikuxac.vortexia:vortexia-api:$apiVersion")
+        implementation("com.github.Vortexia:vortexia-api:v1.3.1")
     }
 
     compileOnly("io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT")
