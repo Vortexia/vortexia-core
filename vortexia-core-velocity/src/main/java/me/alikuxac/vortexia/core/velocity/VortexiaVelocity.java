@@ -11,11 +11,12 @@ import org.slf4j.Logger;
 @Plugin(
         id = "vortexiacore",
         name = "VortexiaCore",
-        version = "1.0",
+        version = "${version}",
         description = "Velocity support for Vortexia core"
 )
 public class VortexiaVelocity {
 
+    @SuppressWarnings("unused")
     private final ProxyServer server;
     private final Logger logger;
 

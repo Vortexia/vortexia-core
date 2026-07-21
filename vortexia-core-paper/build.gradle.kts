@@ -20,17 +20,21 @@ dependencies {
     compileOnly("fr.xephi:authme-core:6.0.0-SNAPSHOT")
     
     // SQLite/MySQL/HikariCP/Caffeine
-    compileOnly("com.zaxxer:HikariCP:5.1.0")
+    implementation("com.zaxxer:HikariCP:5.1.0")
     compileOnly("org.xerial:sqlite-jdbc:3.47.1.0")
     compileOnly("com.mysql:mysql-connector-j:9.1.0")
-    compileOnly("com.github.ben-manes.caffeine:caffeine:3.1.8")
+    implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
     
     implementation("com.github.retrooper:packetevents-spigot:2.12.1")
 }
 
-evaluationDependsOn(":vortexia-core-bungee")
-evaluationDependsOn(":vortexia-core-sponge")
-evaluationDependsOn(":vortexia-core-velocity")
+val bungeePath = if (findProject(":vortexia-core-bungee") != null) ":vortexia-core-bungee" else ":vortexia-core:vortexia-core-bungee"
+val spongePath = if (findProject(":vortexia-core-sponge") != null) ":vortexia-core-sponge" else ":vortexia-core:vortexia-core-sponge"
+val velocityPath = if (findProject(":vortexia-core-velocity") != null) ":vortexia-core-velocity" else ":vortexia-core:vortexia-core-velocity"
+
+evaluationDependsOn(bungeePath)
+evaluationDependsOn(spongePath)
+evaluationDependsOn(velocityPath)
 
 tasks {
     processResources {
@@ -49,6 +53,7 @@ tasks {
         relocate("dev.jorel.commandapi", "me.alikuxac.vortexia.core.libs.commandapi")
         relocate("com.github.retrooper.packetevents", "me.alikuxac.vortexia.core.libs.packetevents")
         relocate("io.github.retrooper.packetevents", "me.alikuxac.vortexia.core.libs.packetevents")
+        relocate("com.zaxxer.hikari", "me.alikuxac.vortexia.core.libs.hikari")
         mergeServiceFiles()
     }
 
@@ -117,7 +122,7 @@ hangarPublish {
                 platformVersions.set(parsedMcVersions)
             }
             register(io.papermc.hangarpublishplugin.model.Platforms.VELOCITY) {
-                jar.set(project(":vortexia-core-velocity").tasks.named<org.gradle.api.tasks.bundling.AbstractArchiveTask>("shadowJar").flatMap { it.archiveFile })
+                jar.set(project(velocityPath).tasks.named<org.gradle.api.tasks.bundling.AbstractArchiveTask>("shadowJar").flatMap { it.archiveFile })
                 platformVersions.set(listOf(project.findProperty("velocityVersion") as? String ?: "3.4-3.5"))
             }
         }
@@ -133,9 +138,9 @@ modrinth {
     changelog.set(gitChangelog)
     uploadFile.set(tasks.shadowJar.flatMap { it.archiveFile })
     additionalFiles.set(listOf(
-        project(":vortexia-core-bungee").tasks.named<org.gradle.api.tasks.bundling.AbstractArchiveTask>("shadowJar").flatMap { it.archiveFile },
-        project(":vortexia-core-sponge").tasks.named<org.gradle.api.tasks.bundling.AbstractArchiveTask>("shadowJar").flatMap { it.archiveFile },
-        project(":vortexia-core-velocity").tasks.named<org.gradle.api.tasks.bundling.AbstractArchiveTask>("shadowJar").flatMap { it.archiveFile }
+        project(bungeePath).tasks.named<org.gradle.api.tasks.bundling.AbstractArchiveTask>("shadowJar").flatMap { it.archiveFile },
+        project(spongePath).tasks.named<org.gradle.api.tasks.bundling.AbstractArchiveTask>("shadowJar").flatMap { it.archiveFile },
+        project(velocityPath).tasks.named<org.gradle.api.tasks.bundling.AbstractArchiveTask>("shadowJar").flatMap { it.archiveFile }
     ))
     gameVersions.set(parsedMcVersions)
     loaders.set(listOf("paper", "bungeecord", "sponge", "velocity"))

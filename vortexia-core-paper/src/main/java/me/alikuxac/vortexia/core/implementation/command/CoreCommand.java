@@ -58,7 +58,12 @@ public class CoreCommand implements BaseCommand {
         .withArguments(new LongArgument("timestamp"))
         .executes((sender, args) -> {
           String cccd = (String) args.get("cccd");
-          long timestamp = (long) args.get("timestamp");
+          Long timestampObj = (Long) args.get("timestamp");
+          if (cccd == null || timestampObj == null) {
+            sender.sendMessage("§c[Vortexia] Invalid arguments.");
+            return;
+          }
+          long timestamp = timestampObj;
 
           VortexiaCore core = VortexiaCore.getInstance();
           sender.sendMessage("§7[Vortexia] Searching for inventory snapshot for CID: §f" + cccd + " §7at timestamp: §f" + timestamp);

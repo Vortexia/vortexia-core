@@ -36,3 +36,9 @@ permissions:
   vortexia.command.restore:
     description: "Restore player inventory snapshots"
     default: op
+
+libraries:
+  - com.zaxxer:HikariCP:5.1.0
+  - org.xerial:sqlite-jdbc:3.47.1.0
+  - com.mysql:mysql-connector-j:9.1.0
+  - com.github.ben-manes.caffeine:caffeine:3.1.8

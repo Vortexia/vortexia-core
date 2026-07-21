@@ -7,7 +7,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 
 import java.time.Duration;
@@ -43,16 +42,69 @@ public class WailaTask implements Runnable {
                 continue;
             }
 
-            // Raycast player vision within 6 blocks
-            Block block = player.getTargetBlockExact(6);
-            if (block == null || block.getType().isAir()) {
-                // Remove display immediately if player looks at air or too far
-                removePlayerHUD(player);
-                continue;
+            // Raycast player vision within 6 blocks to detect both Blocks and Entities
+            org.bukkit.util.RayTraceResult rayTrace = player.getWorld().rayTrace(
+                player.getEyeLocation(),
+                player.getLocation().getDirection(),
+                6,
+                org.bukkit.FluidCollisionMode.NEVER,
+                true,
+                0.2,
+                entity -> entity != player && (entity instanceof org.bukkit.entity.LivingEntity)
+            );
+
+            List<Component> info = new java.util.ArrayList<>();
+            if (rayTrace != null) {
+                if (rayTrace.getHitEntity() instanceof org.bukkit.entity.LivingEntity living) {
+                    // Populate entity information
+                    net.kyori.adventure.text.Component customNameComp = living.customName();
+                    net.kyori.adventure.text.Component entityNameComp = customNameComp != null
+                        ? customNameComp
+                        : net.kyori.adventure.text.Component.text(formatEntityName(living.getType().name()));
+                    String namespace = "minecraft:" + living.getType().name().toLowerCase();
+                    info.add(entityNameComp
+                        .color(net.kyori.adventure.text.format.NamedTextColor.WHITE)
+                        .decorate(net.kyori.adventure.text.format.TextDecoration.BOLD)
+                        .append(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
+                            " <dark_gray>|</dark_gray> <gray>" + namespace + "</gray>"
+                        ))
+                    );
+                    
+                    double health = living.getHealth();
+                    org.bukkit.attribute.Attribute maxHealthAttr = null;
+                    // 1. Try Registry (1.21+)
+                    try {
+                        maxHealthAttr = org.bukkit.Registry.ATTRIBUTE.get(org.bukkit.NamespacedKey.minecraft("generic.max_health"));
+                    } catch (Throwable t1) {
+                        // 2. Try reflection valueOf (for older versions where it was an Enum)
+                        try {
+                            java.lang.reflect.Method valueOf = org.bukkit.attribute.Attribute.class.getMethod("valueOf", String.class);
+                            maxHealthAttr = (org.bukkit.attribute.Attribute) valueOf.invoke(null, "GENERIC_MAX_HEALTH");
+                        } catch (Throwable ignored) {}
+                    }
+
+                    double maxHealth = 20.0;
+                    if (maxHealthAttr != null) {
+                        var instance = living.getAttribute(maxHealthAttr);
+                        if (instance != null) {
+                            maxHealth = instance.getValue();
+                        }
+                    } else {
+                        @SuppressWarnings("deprecation")
+                        double fallbackMax = living.getMaxHealth();
+                        maxHealth = fallbackMax;
+                    }
+                    String formattedHealth = String.format("%.1f", health);
+                    String formattedMaxHealth = String.format("%.1f", maxHealth);
+                    
+                    info.add(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
+                        "<red>❤ Health:</red> <yellow>" + formattedHealth + "</yellow><gray>/</gray><yellow>" + formattedMaxHealth + "</yellow>"
+                    ));
+                } else if (rayTrace.getHitBlock() != null && !rayTrace.getHitBlock().getType().isAir()) {
+                    info = plugin.getWailaManager().getInfo(player, rayTrace.getHitBlock());
+                }
             }
 
-            // Gather all information components from WailaManager
-            List<Component> info = plugin.getWailaManager().getInfo(player, block);
             if (info.isEmpty()) {
                 removePlayerHUD(player);
                 continue;
@@ -67,8 +119,13 @@ public class WailaTask implements Runnable {
                 }
             }
 
+            // Wrap in a sleek HUD container
+            Component containerJoined = net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize("<gray>[</gray> ")
+                .append(joined)
+                .append(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(" <gray>]</gray>"));
+
             // Handle left/right alignment by padding spaces (simulated alignment)
-            Component aligned = applyAlignment(joined, position);
+            Component aligned = applyAlignment(containerJoined, position);
 
             // Categorize and display based on 9 positions (3 main channels: top -> BossBar, bottom -> ActionBar, center -> Subtitle)
             if (position.startsWith("top")) {
@@ -173,5 +230,18 @@ public class WailaTask implements Runnable {
             }
         }
         playerBossBars.clear();
+    }
+
+    private String formatEntityName(String name) {
+        if (name == null || name.isEmpty()) return "";
+        String[] parts = name.split("_");
+        StringBuilder sb = new StringBuilder();
+        for (String part : parts) {
+            if (part.isEmpty()) continue;
+            sb.append(Character.toUpperCase(part.charAt(0)))
+              .append(part.substring(1).toLowerCase())
+              .append(" ");
+        }
+        return sb.toString().trim();
     }
 }

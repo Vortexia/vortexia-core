@@ -24,12 +24,15 @@ public class PermissionManager {
 
     public void registerPermissions() {
         for (Permission perm : Permission.values()) {
-            org.bukkit.permissions.Permission bukkitPerm = new org.bukkit.permissions.Permission(
-                    perm.getNode(),
-                    perm.getDescription(),
-                    PermissionDefault.OP
-            );
-            plugin.getServer().getPluginManager().addPermission(bukkitPerm);
+            org.bukkit.permissions.Permission bukkitPerm = plugin.getServer().getPluginManager().getPermission(perm.getNode());
+            if (bukkitPerm == null) {
+                bukkitPerm = new org.bukkit.permissions.Permission(
+                        perm.getNode(),
+                        perm.getDescription(),
+                        PermissionDefault.OP
+                );
+                plugin.getServer().getPluginManager().addPermission(bukkitPerm);
+            }
             registeredPermissions.put(perm, bukkitPerm);
         }
         plugin.getLoggerService().info("Registered " + registeredPermissions.size() + " permissions.");

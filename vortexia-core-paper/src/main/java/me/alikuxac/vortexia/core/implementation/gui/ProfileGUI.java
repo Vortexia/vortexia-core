@@ -22,6 +22,7 @@ import java.util.List;
 
 public class ProfileGUI {
 
+    @SuppressWarnings("unused")
     private final VortexiaCore plugin;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
             .withZone(ZoneId.systemDefault());

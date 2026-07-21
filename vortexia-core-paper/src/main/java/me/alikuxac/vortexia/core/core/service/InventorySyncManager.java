@@ -20,6 +20,7 @@ public class InventorySyncManager {
   // Cache temporary inventory before authentication in case server crashes or auth fails
   private final Map<UUID, ItemStack[]> tempInventoryCache = new ConcurrentHashMap<>();
   private final Map<UUID, ItemStack[]> tempEnderChestCache = new ConcurrentHashMap<>();
+  private final java.util.Set<CompletableFuture<Void>> activeSaves = ConcurrentHashMap.newKeySet();
 
   public InventorySyncManager(VortexiaCore plugin) {
     this.plugin = plugin;
@@ -108,7 +109,7 @@ public class InventorySyncManager {
     ItemStack[] inv = player.getInventory().getContents();
     ItemStack[] ec = player.getEnderChest().getContents();
 
-    return plugin.getStorageManager().getIdentity(uuid).thenCompose(optIdentity -> {
+    CompletableFuture<Void> future = plugin.getStorageManager().getIdentity(uuid).thenCompose(optIdentity -> {
       if (optIdentity.isEmpty() || optIdentity.get().getCitizenId() == null) {
         return CompletableFuture.completedFuture(null);
       }
@@ -133,6 +134,19 @@ public class InventorySyncManager {
         return CompletableFuture.completedFuture(null);
       }
     });
+
+    activeSaves.add(future);
+    future.whenComplete((res, ex) -> activeSaves.remove(future));
+    return future;
+  }
+
+  public void waitForActiveSaves() {
+    if (activeSaves.isEmpty()) return;
+    try {
+      CompletableFuture.allOf(activeSaves.toArray(new CompletableFuture[0])).join();
+    } catch (Exception e) {
+      plugin.getLoggerService().error("Error waiting for active saves: " + e.getMessage());
+    }
   }
 
   private void restoreFromTempCache(Player player) {

@@ -23,6 +23,7 @@ import java.util.List;
 
 public class RecipeViewerGUI implements Listener {
 
+    @SuppressWarnings("unused")
     private final VortexiaCore plugin;
     private final GuideGUI guideGUI;
 

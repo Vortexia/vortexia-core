@@ -17,6 +17,7 @@ public class PlayerListener implements Listener {
 
   private final VortexiaCore plugin;
   private final IdentityUtil identityUtil;
+  private long lastSaveTime = 0;
 
   public PlayerListener(VortexiaCore plugin) {
     this.plugin = plugin;
@@ -65,6 +66,22 @@ public class PlayerListener implements Listener {
   public void onPlayerKick(PlayerKickEvent event) {
     Player player = event.getPlayer();
     plugin.getInventorySyncManager().saveInventory(player);
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void onWorldSave(org.bukkit.event.world.WorldSaveEvent event) {
+    long now = System.currentTimeMillis();
+    if (now - lastSaveTime < 5000) { // Debounce 5 seconds
+      return;
+    }
+    lastSaveTime = now;
+
+    plugin.getLoggerService().info("World save detected. Auto-saving all player inventories...");
+    for (Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
+      if (plugin.getSecurityManager().isAuthenticated(player)) {
+        plugin.getInventorySyncManager().saveInventory(player);
+      }
+    }
   }
 
   private void checkAndRequestAuth(Player player) {

@@ -70,12 +70,7 @@ public class CoreCustomRecipeManager implements CustomRecipeManager {
                         continue;
                     }
 
-                    if (itemEmpty || choiceEmpty) {
-                        matches = false;
-                        break;
-                    }
-
-                    if (!choice.test(item)) {
+                    if (choice == null || !choice.test(item)) {
                         matches = false;
                         break;
                     }

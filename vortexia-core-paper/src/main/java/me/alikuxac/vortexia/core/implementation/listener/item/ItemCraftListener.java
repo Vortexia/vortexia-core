@@ -25,6 +25,7 @@ import java.util.List;
 
 public class ItemCraftListener implements Listener {
 
+    @SuppressWarnings("unused")
     private final VortexiaCore plugin;
 
     public ItemCraftListener(VortexiaCore plugin) {

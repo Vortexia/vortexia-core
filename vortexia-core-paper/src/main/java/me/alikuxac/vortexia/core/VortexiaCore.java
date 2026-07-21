@@ -2,7 +2,6 @@
 package me.alikuxac.vortexia.core;
 
 import dev.jorel.commandapi.CommandAPI;
-import dev.jorel.commandapi.CommandAPIPaperConfig;
 import com.github.retrooper.packetevents.PacketEvents;
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -208,6 +207,7 @@ public final class VortexiaCore extends JavaPlugin {
         }
 
         if (getConfig().getBoolean("update-checker.enabled", true)) {
+            @SuppressWarnings("deprecation")
             String currentVersion = getDescription().getVersion();
             if (currentVersion.toUpperCase().contains("LOCAL")) {
                 getLogger().info("Local build detected. Update checker disabled.");
@@ -244,6 +244,31 @@ public final class VortexiaCore extends JavaPlugin {
     @Override
     public void onDisable() {
         PacketEvents.getAPI().terminate();
+
+        // Save all online players' inventories synchronously on shutdown/restart
+        if (inventorySyncManager != null && securityManager != null) {
+            java.util.List<java.util.concurrent.CompletableFuture<Void>> futures = new java.util.ArrayList<>();
+            for (org.bukkit.entity.Player onlinePlayer : getServer().getOnlinePlayers()) {
+                if (securityManager.isAuthenticated(onlinePlayer)) {
+                    futures.add(inventorySyncManager.saveInventory(onlinePlayer));
+                }
+            }
+            if (!futures.isEmpty()) {
+                getLogger().info("Saving " + futures.size() + " online players' inventories before shutdown...");
+                try {
+                    java.util.concurrent.CompletableFuture.allOf(futures.toArray(new java.util.concurrent.CompletableFuture[0])).join();
+                    getLogger().info("All online players' inventories saved successfully.");
+                } catch (Exception e) {
+                    getLogger().severe("Failed to save online players' inventories on shutdown: " + e.getMessage());
+                }
+            }
+
+            // Wait for all active background saves (e.g. from players kicked/quit during shutdown)
+            getLogger().info("Waiting for all active background saves to complete...");
+            inventorySyncManager.waitForActiveSaves();
+            getLogger().info("All background saves completed.");
+        }
+
         if (wailaTask != null) {
             wailaTask.cleanup();
         }

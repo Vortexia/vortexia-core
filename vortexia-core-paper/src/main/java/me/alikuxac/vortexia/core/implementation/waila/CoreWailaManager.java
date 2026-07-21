@@ -113,13 +113,46 @@ public class CoreWailaManager implements WailaManager {
             boolean isPreferred = block.isPreferredTool(handItem);
             String statusSymbol = isPreferred ? "<green>✔</green>" : "<red>✘</red>";
             String toolIcon = getToolIcon(toolType);
+            String reqTier = detectRequiredTier(block);
+            String tierSuffix = reqTier.equals("Any") ? "" : " (" + getTierColorName(reqTier) + ")";
 
             info.add(MiniMessage.miniMessage().deserialize(
-                "<gray>Tool: " + toolIcon + " " + toolType + " " + statusSymbol + "</gray>"
+                "<gray>Tool: " + toolIcon + " " + toolType + tierSuffix + " " + statusSymbol + "</gray>"
             ));
         }
 
         return info;
+    }
+
+    private String detectRequiredTier(Block block) {
+        if (org.bukkit.Tag.NEEDS_DIAMOND_TOOL.isTagged(block.getType())) {
+            return "Diamond";
+        }
+        if (org.bukkit.Tag.NEEDS_IRON_TOOL.isTagged(block.getType())) {
+            return "Iron";
+        }
+        if (org.bukkit.Tag.NEEDS_STONE_TOOL.isTagged(block.getType())) {
+            return "Stone";
+        }
+        
+        // If it requires a pickaxe to drop items (e.g. Stone, Coal Ore) but no tag matches
+        String rawName = block.getType().name();
+        if (rawName.contains("STONE") || rawName.contains("ORE") || rawName.contains("DEEPSLATE") ||
+            rawName.contains("ANDESITE") || rawName.contains("DIORITE") || rawName.contains("GRANITE")) {
+            return "Wooden";
+        }
+        
+        return "Any";
+    }
+
+    private String getTierColorName(String tier) {
+        return switch (tier) {
+            case "Wooden" -> "<gold>Wood</gold>";
+            case "Stone" -> "<gray>Stone</gray>";
+            case "Iron" -> "<white>Iron</white>";
+            case "Diamond" -> "<aqua>Diamond</aqua>";
+            default -> "Any";
+        };
     }
 
     /**
