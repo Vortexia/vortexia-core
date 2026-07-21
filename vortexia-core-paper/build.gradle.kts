@@ -28,6 +28,10 @@ dependencies {
     implementation("com.github.retrooper:packetevents-spigot:2.12.1")
 }
 
+evaluationDependsOn(":vortexia-core-bungee")
+evaluationDependsOn(":vortexia-core-sponge")
+evaluationDependsOn(":vortexia-core-velocity")
+
 tasks {
     processResources {
         val projectVersion = project.version
@@ -97,18 +101,24 @@ val mcVersionsProp = project.findProperty("mcVersions") as? String ?: "1.21"
 val parsedMcVersions = mcVersionsProp.split(",").map { it.trim() }
 val modrinthProjectIdProp = project.findProperty("modrinthProjectID") as? String ?: "VxHFxXAM"
 val hangarProjectIdProp = project.findProperty("hangarProjectID") as? String ?: "vortexia-core"
+val gitChangelog = System.getenv("COMMIT_MESSAGE") ?: "No changelog provided."
 
 hangarPublish {
     publications.register("plugin") {
         version.set(rawVersion)
         id.set(hangarProjectIdProp) // Đặt ID chính xác của dự án trên Hangar
         channel.set(hangarChannel)
+        changelog.set(gitChangelog)
         apiKey.set(System.getenv("HANGAR_API_TOKEN"))
 
         platforms {
             register(io.papermc.hangarpublishplugin.model.Platforms.PAPER) {
                 jar.set(tasks.shadowJar.flatMap { it.archiveFile })
                 platformVersions.set(parsedMcVersions)
+            }
+            register(io.papermc.hangarpublishplugin.model.Platforms.VELOCITY) {
+                jar.set(project(":vortexia-core-velocity").tasks.named<org.gradle.api.tasks.bundling.AbstractArchiveTask>("shadowJar").flatMap { it.archiveFile })
+                platformVersions.set(listOf(project.findProperty("velocityVersion") as? String ?: "3.4-3.5"))
             }
         }
     }
@@ -120,8 +130,13 @@ modrinth {
     versionNumber.set(rawVersion)
     versionName.set(finalVersionName)
     versionType.set(modrinthVersionType)
+    changelog.set(gitChangelog)
     uploadFile.set(tasks.shadowJar.flatMap { it.archiveFile })
+    additionalFiles.set(listOf(
+        project(":vortexia-core-bungee").tasks.named<org.gradle.api.tasks.bundling.AbstractArchiveTask>("shadowJar").flatMap { it.archiveFile },
+        project(":vortexia-core-sponge").tasks.named<org.gradle.api.tasks.bundling.AbstractArchiveTask>("shadowJar").flatMap { it.archiveFile },
+        project(":vortexia-core-velocity").tasks.named<org.gradle.api.tasks.bundling.AbstractArchiveTask>("shadowJar").flatMap { it.archiveFile }
+    ))
     gameVersions.set(parsedMcVersions)
-    loaders.set(listOf("paper"))
+    loaders.set(listOf("paper", "bungeecord", "sponge", "velocity"))
 }
-

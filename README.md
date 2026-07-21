@@ -1,5 +1,13 @@
 # Vortexia Core
 
+[![Build Development](https://github.com/Vortexia/vortexia-core/actions/workflows/build-development.yml/badge.svg)](https://github.com/Vortexia/vortexia-core/actions/workflows/build-development.yml)
+[![Build Beta](https://github.com/Vortexia/vortexia-core/actions/workflows/build-beta.yml/badge.svg)](https://github.com/Vortexia/vortexia-core/actions/workflows/build-beta.yml)
+[![Build Release](https://github.com/Vortexia/vortexia-core/actions/workflows/build-master.yml/badge.svg)](https://github.com/Vortexia/vortexia-core/actions/workflows/build-master.yml)
+[![Modrinth](https://img.shields.io/modrinth/v/VxHFxXAM?label=Modrinth&color=00AD5C)](https://modrinth.com/plugin/vortexia-core)
+[![Hangar](https://img.shields.io/hangar/v/vortexia-core?label=Hangar&color=005A9C)](https://hangar.papermc.io/Vortexia/vortexia-core)
+[![Java Version](https://img.shields.io/badge/Java-21-orange.svg)](https://www.oracle.com/java/technologies/downloads/)
+[![License](https://img.shields.io/github/license/Vortexia/vortexia-core)](LICENSE)
+
 > [!WARNING]
 > This is an **experimental** build of Vortexia Core under active development. Features are subject to change, and APIs or behaviors may break at any time. Use at your own risk in production environments!
 
