@@ -6,14 +6,14 @@ plugins {
 val refName = System.getenv("GITHUB_REF_NAME") ?: "local"
 val refType = System.getenv("GITHUB_REF_TYPE") ?: "branch"
 val runNumber = System.getenv("GITHUB_RUN_NUMBER")
-val versionNumber = "0.3.0"
+val versionNumber = project.findProperty("projectVersion") as String? ?: "0.3.0"
 
 val calculatedVersion = if (refType == "tag") {
     refName.replaceFirst("v", "")
 } else if (refName == "master" || refName == "main") {
     versionNumber
 } else if (refName == "development") {
-    if (runNumber != null) "$versionNumber-DEV-$runNumber" else "$versionNumber-DEV"
+    if (runNumber != null) "$versionNumber-alpha-b.$runNumber" else "$versionNumber-alpha"
 } else {
     if (runNumber != null) "$versionNumber-${refName.uppercase()}-$runNumber" else "$versionNumber-${refName.uppercase()}"
 }

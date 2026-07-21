@@ -1,20 +1,8 @@
-name: Build Development
+name: Build Beta
 
 on:
   push:
-    branches: [ "development" ]
-    paths-ignore:
-      - '**.md'
-      - 'LICENSE'
-      - '.gitignore'
-      - '.gitattributes'
-  pull_request:
-    branches: [ "development" ]
-    paths-ignore:
-      - '**.md'
-      - 'LICENSE'
-      - '.gitignore'
-      - '.gitattributes'
+    tags: [ "v*-beta*" ]
 
 jobs:
   build:
@@ -43,22 +31,28 @@ jobs:
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: vortexia-core-dev
+        name: vortexia-core-beta
         path: "vortexia-core-*/build/libs/*.jar"
 
-    - name: Get Project Version
-      id: get_version
-      run: |
-        chmod +x gradlew
-        VERSION=$(./gradlew :vortexia-core-paper:properties -q | grep "^version:" | awk '{print $2}')
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
+    - name: Create Beta Release
+      if: success() && startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: "vortexia-core-*/build/libs/*.jar"
+        tag_name: ${{ github.ref_name }}
+        name: Beta ${{ github.ref_name }}
+        draft: false
+        prerelease: true
+        make_latest: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Publish to Hangar and Modrinth (Dev)
-      if: success() && github.event_name == 'push' && github.ref == 'refs/heads/development'
+    - name: Publish to Hangar and Modrinth (Beta)
+      if: success() && startsWith(github.ref, 'refs/tags/v')
       run: |
         chmod +x gradlew
         ./gradlew :vortexia-core-paper:publishPluginPublicationToHangar :vortexia-core-paper:modrinth
       env:
         HANGAR_API_TOKEN: ${{ secrets.HANGAR_API_TOKEN }}
         MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
-

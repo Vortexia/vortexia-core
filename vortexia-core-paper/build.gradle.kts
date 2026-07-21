@@ -1,6 +1,8 @@
 plugins {
     id("com.gradleup.shadow")
     `maven-publish`
+    id("io.papermc.hangar-publish-plugin") version "0.1.4"
+    id("com.modrinth.minotaur") version "2.9.0"
 }
 
 dependencies {
@@ -63,3 +65,63 @@ publishing {
         }
     }
 }
+
+val rawVersion = project.version.toString()
+val refType = System.getenv("GITHUB_REF_TYPE") ?: "branch"
+val refName = System.getenv("GITHUB_REF_NAME") ?: "local"
+val runNumber = System.getenv("GITHUB_RUN_NUMBER") ?: "0"
+val versionNumber = project.findProperty("projectVersion") as? String ?: "0.3.0"
+
+val isMasterRelease = refType == "tag"
+val isBetaRelease = isMasterRelease && refName.contains("beta", ignoreCase = true)
+
+val hangarChannel = when {
+    isBetaRelease -> "Beta"
+    isMasterRelease -> "Release"
+    else -> "Snapshot"
+}
+
+val modrinthVersionType = when {
+    isBetaRelease -> "beta"
+    isMasterRelease -> "release"
+    else -> "alpha"
+}
+
+val finalVersionName = when {
+    isBetaRelease -> refName // e.g., v0.3.0-beta.1
+    isMasterRelease -> refName // e.g., v0.3.0
+    else -> "v$versionNumber-alpha (build #$runNumber)"
+}
+
+val mcVersionsProp = project.findProperty("mcVersions") as? String ?: "1.21"
+val parsedMcVersions = mcVersionsProp.split(",").map { it.trim() }
+val modrinthProjectIdProp = project.findProperty("modrinthProjectID") as? String ?: "VxHFxXAM"
+val hangarProjectIdProp = project.findProperty("hangarProjectID") as? String ?: "vortexia-core"
+
+hangarPublish {
+    publications.register("plugin") {
+        version.set(rawVersion)
+        id.set(hangarProjectIdProp) // Đặt ID chính xác của dự án trên Hangar
+        channel.set(hangarChannel)
+        apiKey.set(System.getenv("HANGAR_API_TOKEN"))
+
+        platforms {
+            register(io.papermc.hangarpublishplugin.model.Platforms.PAPER) {
+                jar.set(tasks.shadowJar.flatMap { it.archiveFile })
+                platformVersions.set(parsedMcVersions)
+            }
+        }
+    }
+}
+
+modrinth {
+    token.set(System.getenv("MODRINTH_TOKEN"))
+    projectId.set(modrinthProjectIdProp) // Đặt ID chính xác của dự án trên Modrinth
+    versionNumber.set(rawVersion)
+    versionName.set(finalVersionName)
+    versionType.set(modrinthVersionType)
+    uploadFile.set(tasks.shadowJar.flatMap { it.archiveFile })
+    gameVersions.set(parsedMcVersions)
+    loaders.set(listOf("paper"))
+}
+

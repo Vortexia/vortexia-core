@@ -2,13 +2,16 @@ name: Build Release (Master/Main)
 
 on:
   push:
-    tags: [ "v*" ]
+    tags:
+      - 'v*'
+      - '!v*-beta*'
   pull_request:
     branches: [ "main", "master" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: "!startsWith(github.event.head_commit.message, '[Ci skip]')"
     permissions:
       contents: write
 
@@ -48,3 +51,13 @@ jobs:
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Publish to Hangar and Modrinth (Release)
+      if: success() && startsWith(github.ref, 'refs/tags/v')
+      run: |
+        chmod +x gradlew
+        ./gradlew :vortexia-core-paper:publishPluginPublicationToHangar :vortexia-core-paper:modrinth
+      env:
+        HANGAR_API_TOKEN: ${{ secrets.HANGAR_API_TOKEN }}
+        MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+
