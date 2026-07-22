@@ -187,23 +187,25 @@ public final class VortexiaCore extends JavaPlugin {
         this.commandManager.registerCommands();
 
         // Start Periodic Auto-Save task for online players (default: 5 minutes / 6000 ticks)
-        long autoSaveInterval = getConfig().getLong("inventory-sync.auto-save-interval-ticks", 6000L);
-        if (this.schedulerService.isFolia()) {
-            getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> {
-                for (org.bukkit.entity.Player onlinePlayer : getServer().getOnlinePlayers()) {
-                    if (this.securityManager.isAuthenticated(onlinePlayer)) {
-                        this.inventorySyncManager.saveInventory(onlinePlayer);
+        if (getConfig().getBoolean("inventory-sync.enabled", true)) {
+            long autoSaveInterval = getConfig().getLong("inventory-sync.auto-save-interval-ticks", 6000L);
+            if (this.schedulerService.isFolia()) {
+                getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> {
+                    for (org.bukkit.entity.Player onlinePlayer : getServer().getOnlinePlayers()) {
+                        if (this.securityManager.isAuthenticated(onlinePlayer)) {
+                            this.inventorySyncManager.saveInventory(onlinePlayer);
+                        }
                     }
-                }
-            }, 1200L, autoSaveInterval);
-        } else {
-            getServer().getScheduler().runTaskTimer(this, () -> {
-                for (org.bukkit.entity.Player onlinePlayer : getServer().getOnlinePlayers()) {
-                    if (this.securityManager.isAuthenticated(onlinePlayer)) {
-                        this.inventorySyncManager.saveInventory(onlinePlayer);
+                }, 1200L, autoSaveInterval);
+            } else {
+                getServer().getScheduler().runTaskTimer(this, () -> {
+                    for (org.bukkit.entity.Player onlinePlayer : getServer().getOnlinePlayers()) {
+                        if (this.securityManager.isAuthenticated(onlinePlayer)) {
+                            this.inventorySyncManager.saveInventory(onlinePlayer);
+                        }
                     }
-                }
-            }, 1200L, autoSaveInterval);
+                }, 1200L, autoSaveInterval);
+            }
         }
 
         if (getConfig().getBoolean("update-checker.enabled", true)) {

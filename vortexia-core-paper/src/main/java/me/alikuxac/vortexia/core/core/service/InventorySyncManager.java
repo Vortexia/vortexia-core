@@ -31,6 +31,9 @@ public class InventorySyncManager {
    * and clear their active inventory to prevent exploiting before authentication.
    */
   public void applyFailsafeLock(Player player) {
+    if (!plugin.getConfig().getBoolean("inventory-sync.enabled", true)) {
+      return;
+    }
     UUID uuid = player.getUniqueId();
     // Cache locally to prevent database failure risks
     tempInventoryCache.put(uuid, player.getInventory().getContents());
@@ -47,6 +50,9 @@ public class InventorySyncManager {
    * Includes a slight delay to resolve cross-server sync lag / race conditions.
    */
   public CompletableFuture<Void> restoreInventory(Player player) {
+    if (!plugin.getConfig().getBoolean("inventory-sync.enabled", true)) {
+      return CompletableFuture.completedFuture(null);
+    }
     UUID uuid = player.getUniqueId();
     CompletableFuture<Void> future = new CompletableFuture<>();
 
@@ -99,6 +105,9 @@ public class InventorySyncManager {
    * Save player's inventory to the database as a snapshot.
    */
   public CompletableFuture<Void> saveInventory(Player player) {
+    if (!plugin.getConfig().getBoolean("inventory-sync.enabled", true)) {
+      return CompletableFuture.completedFuture(null);
+    }
     UUID uuid = player.getUniqueId();
     // Only save if the player is authenticated
     if (!plugin.getSecurityManager().isAuthenticated(player)) {

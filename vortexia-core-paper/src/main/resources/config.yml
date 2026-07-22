@@ -108,6 +108,9 @@ waila:
 
 # Inventory Synchronization & Backup Settings
 inventory-sync:
+  # Enable inventory synchronization
+  enabled: true
+  
   # The maximum number of historical inventory snapshots to keep per player.
   # Adjust this value to manage database storage consumption. (Recommended: 5 to 20)
   keep-snapshots-limit: 10
