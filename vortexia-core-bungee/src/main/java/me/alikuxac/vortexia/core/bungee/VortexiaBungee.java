@@ -1,6 +1,8 @@
 // Developed by alikuxac - Project Vortexia
 package me.alikuxac.vortexia.core.bungee;
 
+import me.alikuxac.vortexia.core.proxy.ProxyAuthManager;
+import me.alikuxac.vortexia.core.proxy.ProxyMessageDecoder;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.config.ServerInfo;
@@ -12,16 +14,10 @@ import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.event.EventHandler;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
 public class VortexiaBungee extends Plugin implements Listener {
 
-    public static final String CHANNEL = "vortexia:main";
-    private final Set<UUID> authenticatedPlayers = ConcurrentHashMap.newKeySet();
+    public static final String CHANNEL = ProxyAuthManager.getChannel();
+    private final ProxyAuthManager authManager = new ProxyAuthManager();
 
     @Override
     public void onEnable() {
@@ -38,18 +34,17 @@ public class VortexiaBungee extends Plugin implements Listener {
 
     @EventHandler
     public void onPlayerDisconnect(PlayerDisconnectEvent event) {
-        authenticatedPlayers.remove(event.getPlayer().getUniqueId());
+        authManager.unauthenticate(event.getPlayer().getUniqueId());
     }
 
     @EventHandler
     public void onServerConnect(ServerConnectEvent event) {
         ProxiedPlayer player = event.getPlayer();
-        // Allow the initial connection to the lobby/first server
         if (player.getServer() == null) {
             return;
         }
 
-        if (!authenticatedPlayers.contains(player.getUniqueId())) {
+        if (!authManager.isAuthenticated(player.getUniqueId())) {
             event.setCancelled(true);
             player.sendMessage(new TextComponent(ChatColor.RED + "You must authenticate your PIN before switching servers!"));
         }
@@ -61,24 +56,13 @@ public class VortexiaBungee extends Plugin implements Listener {
             return;
         }
 
-        try {
-            ByteArrayInputStream bis = new ByteArrayInputStream(event.getData());
-            DataInputStream in = new DataInputStream(bis);
-            String subChannel = in.readUTF();
+        ProxyMessageDecoder.parseAuthSync(event.getData()).ifPresent(payload -> {
+            authManager.authenticate(payload.uuid());
+            getLogger().info("Player authenticated on proxy: " + payload.uuid());
 
-            if ("AUTH_SYNC".equals(subChannel)) {
-                String uuidStr = in.readUTF();
-                UUID uuid = UUID.fromString(uuidStr);
-                authenticatedPlayers.add(uuid);
-                getLogger().info("Player authenticated on proxy: " + uuid);
-
-                // Broadcast this auth event to all other registered backend servers
-                for (ServerInfo serverInfo : getProxy().getServers().values()) {
-                    serverInfo.sendData(CHANNEL, event.getData());
-                }
+            for (ServerInfo serverInfo : getProxy().getServers().values()) {
+                serverInfo.sendData(CHANNEL, event.getData());
             }
-        } catch (Exception e) {
-            getLogger().severe("Failed to parse plugin message on BungeeCord: " + e.getMessage());
-        }
+        });
     }
 }

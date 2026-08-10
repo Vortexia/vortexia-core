@@ -6,6 +6,8 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":vortexia-core-backend-common"))
+
     if (findProject(":vortexia-api") != null) {
         implementation(project(":vortexia-api"))
     } else {
@@ -28,10 +30,12 @@ dependencies {
     implementation("com.github.retrooper:packetevents-spigot:2.12.1")
 }
 
+val backendCommonPath = if (findProject(":vortexia-core-backend-common") != null) ":vortexia-core-backend-common" else ":vortexia-core:vortexia-core-backend-common"
 val bungeePath = if (findProject(":vortexia-core-bungee") != null) ":vortexia-core-bungee" else ":vortexia-core:vortexia-core-bungee"
 val spongePath = if (findProject(":vortexia-core-sponge") != null) ":vortexia-core-sponge" else ":vortexia-core:vortexia-core-sponge"
 val velocityPath = if (findProject(":vortexia-core-velocity") != null) ":vortexia-core-velocity" else ":vortexia-core:vortexia-core-velocity"
 
+evaluationDependsOn(backendCommonPath)
 evaluationDependsOn(bungeePath)
 evaluationDependsOn(spongePath)
 evaluationDependsOn(velocityPath)
@@ -85,7 +89,7 @@ val isMasterRelease = refType == "tag"
 val isBetaRelease = isMasterRelease && refName.contains("beta", ignoreCase = true)
 
 val hangarChannel = when {
-    isBetaRelease -> "Beta"
+    isBetaRelease -> "Snapshot"
     isMasterRelease -> "Release"
     else -> "Snapshot"
 }
@@ -111,7 +115,7 @@ val gitChangelog = System.getenv("COMMIT_MESSAGE") ?: "No changelog provided."
 hangarPublish {
     publications.register("plugin") {
         version.set(rawVersion)
-        id.set(hangarProjectIdProp) // Đặt ID chính xác của dự án trên Hangar
+        id.set(hangarProjectIdProp)
         channel.set(hangarChannel)
         changelog.set(gitChangelog)
         apiKey.set(System.getenv("HANGAR_API_TOKEN"))
@@ -131,7 +135,7 @@ hangarPublish {
 
 modrinth {
     token.set(System.getenv("MODRINTH_TOKEN"))
-    projectId.set(modrinthProjectIdProp) // Đặt ID chính xác của dự án trên Modrinth
+    projectId.set(modrinthProjectIdProp)
     versionNumber.set(rawVersion)
     versionName.set(finalVersionName)
     versionType.set(modrinthVersionType)

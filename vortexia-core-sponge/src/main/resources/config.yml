@@ -1,0 +1,13 @@
+# ==========================================
+# Vortexia Core - Sponge Configuration
+# ==========================================
+
+system:
+  prefix: "&8[&bVortexia-Sponge&8] &f"
+  debug: false
+
+# Inventory Synchronization Settings
+inventory-sync:
+  enabled: true
+  keep-snapshots-limit: 10
+  auto-save-interval-ticks: 6000

@@ -4,6 +4,7 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":vortexia-core-backend-common"))
     compileOnly("org.spongepowered:spongeapi:10.0.0")
 }
 

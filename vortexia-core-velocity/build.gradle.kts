@@ -4,6 +4,7 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":vortexia-core-proxy-common"))
     compileOnly("com.velocitypowered:velocity-api:3.3.0-SNAPSHOT")
 }
 

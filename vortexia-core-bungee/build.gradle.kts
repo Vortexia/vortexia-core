@@ -4,6 +4,7 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":vortexia-core-proxy-common"))
     compileOnly("net.md-5:bungeecord-api:1.20-R0.1-SNAPSHOT")
 }
 
