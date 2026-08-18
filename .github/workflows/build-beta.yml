@@ -31,13 +31,19 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: vortexia-core-beta
-        path: "vortexia-core-*/build/libs/*.jar"
+        path: |
+          vortexia-core-*/build/libs/*.jar
+          !vortexia-core-*common*/build/libs/*.jar
 
     - name: Create Beta Release
       if: success() && startsWith(github.ref, 'refs/tags/v')
       uses: softprops/action-gh-release@v2
       with:
-        files: "vortexia-core-*/build/libs/*.jar"
+        files: |
+          vortexia-core-paper/build/libs/*.jar
+          vortexia-core-bungee/build/libs/*.jar
+          vortexia-core-sponge/build/libs/*.jar
+          vortexia-core-velocity/build/libs/*.jar
         tag_name: ${{ github.ref_name }}
         name: Beta ${{ github.ref_name }}
         draft: false
@@ -47,12 +53,20 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Publish to Hangar and Modrinth (Beta)
+    - name: Publish to Hangar (Beta)
       if: success() && startsWith(github.ref, 'refs/tags/v')
       run: |
         chmod +x gradlew
-        ./gradlew :vortexia-core-paper:publishPluginPublicationToHangar :vortexia-core-paper:modrinth
+        ./gradlew :vortexia-core-paper:publishPluginPublicationToHangar --no-configuration-cache
       env:
         HANGAR_API_TOKEN: ${{ secrets.HANGAR_API_TOKEN }}
+        COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+
+    - name: Publish to Modrinth (Beta)
+      if: success() && startsWith(github.ref, 'refs/tags/v')
+      run: |
+        chmod +x gradlew
+        ./gradlew :vortexia-core-paper:modrinth --no-configuration-cache
+      env:
         MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
         COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
