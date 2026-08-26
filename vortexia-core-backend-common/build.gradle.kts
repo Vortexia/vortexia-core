@@ -6,7 +6,7 @@ dependencies {
     if (findProject(":vortexia-api") != null) {
         api(project(":vortexia-api"))
     } else {
-        api("com.github.Vortexia:vortexia-api:v1.3.1")
+        api("com.github.Vortexia:vortexia-api:v1.3.2")
     }
 
     // Storage & Caching Libraries
