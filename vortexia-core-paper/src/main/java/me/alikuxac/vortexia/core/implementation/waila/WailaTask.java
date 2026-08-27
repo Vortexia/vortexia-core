@@ -1,15 +1,27 @@
 // Developed by alikuxac - Project Vortexia
 package me.alikuxac.vortexia.core.implementation.waila;
 
+import me.alikuxac.vortexia.api.network.protocol.MachineSyncPacket;
+import me.alikuxac.vortexia.api.network.protocol.NetworkChannels;
 import me.alikuxac.vortexia.core.VortexiaCore;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
+import org.bukkit.FluidCollisionMode;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.block.Block;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.util.RayTraceResult;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -43,43 +55,43 @@ public class WailaTask implements Runnable {
             }
 
             // Raycast player vision within 6 blocks to detect both Blocks and Entities
-            org.bukkit.util.RayTraceResult rayTrace = player.getWorld().rayTrace(
+            RayTraceResult rayTrace = player.getWorld().rayTrace(
                 player.getEyeLocation(),
                 player.getLocation().getDirection(),
                 6,
-                org.bukkit.FluidCollisionMode.NEVER,
+                FluidCollisionMode.NEVER,
                 true,
                 0.2,
-                entity -> entity != player && (entity instanceof org.bukkit.entity.LivingEntity)
+                entity -> entity != player && (entity instanceof LivingEntity)
             );
 
-            List<Component> info = new java.util.ArrayList<>();
+            List<Component> info = new ArrayList<>();
             if (rayTrace != null) {
-                if (rayTrace.getHitEntity() instanceof org.bukkit.entity.LivingEntity living) {
+                if (rayTrace.getHitEntity() instanceof LivingEntity living) {
                     // Populate entity information
-                    net.kyori.adventure.text.Component customNameComp = living.customName();
-                    net.kyori.adventure.text.Component entityNameComp = customNameComp != null
+                    Component customNameComp = living.customName();
+                    Component entityNameComp = customNameComp != null
                         ? customNameComp
-                        : net.kyori.adventure.text.Component.text(formatEntityName(living.getType().name()));
+                        : Component.text(formatEntityName(living.getType().name()));
                     String namespace = "minecraft:" + living.getType().name().toLowerCase();
                     info.add(entityNameComp
-                        .color(net.kyori.adventure.text.format.NamedTextColor.WHITE)
-                        .decorate(net.kyori.adventure.text.format.TextDecoration.BOLD)
-                        .append(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
+                        .color(NamedTextColor.WHITE)
+                        .decorate(TextDecoration.BOLD)
+                        .append(MiniMessage.miniMessage().deserialize(
                             " <dark_gray>|</dark_gray> <gray>" + namespace + "</gray>"
                         ))
                     );
                     
                     double health = living.getHealth();
-                    org.bukkit.attribute.Attribute maxHealthAttr = null;
+                    Attribute maxHealthAttr = null;
                     // 1. Try Registry (1.21+)
                     try {
-                        maxHealthAttr = org.bukkit.Registry.ATTRIBUTE.get(org.bukkit.NamespacedKey.minecraft("generic.max_health"));
+                        maxHealthAttr = Registry.ATTRIBUTE.get(NamespacedKey.minecraft("generic.max_health"));
                     } catch (Throwable t1) {
                         // 2. Try reflection valueOf (for older versions where it was an Enum)
                         try {
-                            java.lang.reflect.Method valueOf = org.bukkit.attribute.Attribute.class.getMethod("valueOf", String.class);
-                            maxHealthAttr = (org.bukkit.attribute.Attribute) valueOf.invoke(null, "GENERIC_MAX_HEALTH");
+                            java.lang.reflect.Method valueOf = Attribute.class.getMethod("valueOf", String.class);
+                            maxHealthAttr = (Attribute) valueOf.invoke(null, "GENERIC_MAX_HEALTH");
                         } catch (Throwable ignored) {}
                     }
 
@@ -97,15 +109,30 @@ public class WailaTask implements Runnable {
                     String formattedHealth = String.format("%.1f", health);
                     String formattedMaxHealth = String.format("%.1f", maxHealth);
                     
-                    info.add(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
+                    info.add(MiniMessage.miniMessage().deserialize(
                         "<red>❤ Health:</red> <yellow>" + formattedHealth + "</yellow><gray>/</gray><yellow>" + formattedMaxHealth + "</yellow>"
                     ));
                 } else if (rayTrace.getHitBlock() != null && !rayTrace.getHitBlock().getType().isAir()) {
-                    info = plugin.getWailaManager().getInfo(player, rayTrace.getHitBlock());
+                    Block hitBlock = rayTrace.getHitBlock();
+                    info = plugin.getWailaManager().getInfo(player, hitBlock);
+
+                    if (plugin.getNetworkSyncManager() != null) {
+                        try {
+                            long blockPos = hitBlock.getBlockKey();
+                            plugin.getNetworkSyncManager().getSubscriptionManager().updateActiveSubscription(player, blockPos);
+
+                            short machineId = (short) (Math.abs(hitBlock.getType().hashCode()) & 0x7FFF);
+                            MachineSyncPacket packet = MachineSyncPacket.of(hitBlock, machineId, 0, (byte) 1);
+                            plugin.getNetworkSyncManager().sendMachineSync(player, NetworkChannels.HUD_CHANNEL, packet);
+                        } catch (Exception ignored) {}
+                    }
                 }
             }
 
             if (info.isEmpty()) {
+                if (plugin.getNetworkSyncManager() != null) {
+                    plugin.getNetworkSyncManager().getSubscriptionManager().unsubscribeAll(player);
+                }
                 removePlayerHUD(player);
                 continue;
             }
@@ -120,9 +147,9 @@ public class WailaTask implements Runnable {
             }
 
             // Wrap in a sleek HUD container
-            Component containerJoined = net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize("<gray>[</gray> ")
+            Component containerJoined = MiniMessage.miniMessage().deserialize("<gray>[</gray> ")
                 .append(joined)
-                .append(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(" <gray>]</gray>"));
+                .append(MiniMessage.miniMessage().deserialize(" <gray>]</gray>"));
 
             // Handle left/right alignment by padding spaces (simulated alignment)
             Component aligned = applyAlignment(containerJoined, position);

@@ -178,6 +178,9 @@ public final class VortexiaCore extends JavaPlugin {
                 new PlayerListener(this),
                 this);
         getServer().getPluginManager().registerEvents(
+                new me.alikuxac.vortexia.core.implementation.listener.player.SubscriptionDisconnectListener(this),
+                this);
+        getServer().getPluginManager().registerEvents(
                 new CitizenCardListener(this),
                 this);
         getServer().getPluginManager().registerEvents(
