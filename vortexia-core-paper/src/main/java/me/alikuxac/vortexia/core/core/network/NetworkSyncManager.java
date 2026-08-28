@@ -25,10 +25,12 @@ public class NetworkSyncManager {
     private final VortexiaCore plugin;
     private final MachineSyncPacketListener packetListener;
     private final SubscriptionManager subscriptionManager;
+    private final MachineMetricsDeltaTracker deltaTracker;
 
     public NetworkSyncManager(VortexiaCore plugin) {
         this.plugin = plugin;
         this.subscriptionManager = new SubscriptionManager();
+        this.deltaTracker = new MachineMetricsDeltaTracker();
         this.packetListener = new MachineSyncPacketListener(plugin, this.subscriptionManager);
     }
 
@@ -68,6 +70,7 @@ public class NetworkSyncManager {
         plugin.getServer().getMessenger().unregisterOutgoingPluginChannel(plugin, UNSUBSCRIBE_CHANNEL);
 
         subscriptionManager.clear();
+        deltaTracker.clear();
     }
 
     /**
@@ -93,11 +96,26 @@ public class NetworkSyncManager {
      */
     public void broadcastToSubscribers(long blockPos, String channel, MachineSyncPacket packet) {
         Objects.requireNonNull(packet, "Packet cannot be null");
+        if (!deltaTracker.shouldEmit(blockPos, packet)) {
+            return;
+        }
+
         for (UUID uuid : subscriptionManager.getSubscribers(blockPos)) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null && player.isOnline()) {
                 sendMachineSync(player, channel, packet);
             }
+        }
+    }
+
+    /**
+     * Asynchronously dispatches generated binary payloads to subscribers.
+     */
+    public void broadcastToSubscribersAsync(long blockPos, String channel, MachineSyncPacket packet) {
+        if (plugin.getSchedulerService() != null) {
+            plugin.getSchedulerService().runAsync(() -> broadcastToSubscribers(blockPos, channel, packet));
+        } else {
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> broadcastToSubscribers(blockPos, channel, packet));
         }
     }
 
@@ -122,6 +140,10 @@ public class NetworkSyncManager {
 
     public SubscriptionManager getSubscriptionManager() {
         return subscriptionManager;
+    }
+
+    public MachineMetricsDeltaTracker getDeltaTracker() {
+        return deltaTracker;
     }
 }
 
