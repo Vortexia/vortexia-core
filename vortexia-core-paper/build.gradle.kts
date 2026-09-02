@@ -110,79 +110,14 @@ val mcVersionsProp = project.findProperty("mcVersions") as? String ?: "1.21"
 val parsedMcVersions = mcVersionsProp.split(",").map { it.trim() }
 val modrinthProjectIdProp = project.findProperty("modrinthProjectID") as? String ?: "VxHFxXAM"
 val hangarProjectIdProp = project.findProperty("hangarProjectID") as? String ?: "vortexia-core"
-val gitChangelog = System.getenv("COMMIT_MESSAGE") ?: "No changelog provided."
 
-hangarPublish {
-    publications.register("plugin") {
-        version.set(rawVersion)
-        id.set(hangarProjectIdProp)
-        channel.set(hangarChannel)
-        changelog.set(gitChangelog)
-        apiKey.set(System.getenv("HANGAR_API_TOKEN"))
-
-        platforms {
-            register(io.papermc.hangarpublishplugin.model.Platforms.PAPER) {
-                jar.set(tasks.shadowJar.flatMap { it.archiveFile })
-                platformVersions.set(parsedMcVersions)
-            }
-            register(io.papermc.hangarpublishplugin.model.Platforms.VELOCITY) {
-                jar.set(project(velocityPath).tasks.named<org.gradle.api.tasks.bundling.AbstractArchiveTask>("shadowJar").flatMap { it.archiveFile })
-                platformVersions.set(listOf(project.findProperty("velocityVersion") as? String ?: "3.4-3.5"))
-            }
-        }
-    }
-}
-
+val githubReleaseUrl = "https://github.com/Vortexia/vortexia-core/releases/tag/$refName"
 val modrinthTokenEnv = System.getenv("MODRINTH_TOKEN")
 
+// Modrinth Tasks commented out until Minotaur DSL syntax is configured properly
+/*
 tasks.register<com.modrinth.minotaur.TaskModrinthUpload>("modrinthPaper") {
-    token.set(modrinthTokenEnv)
-    projectId.set(modrinthProjectIdProp)
-    versionNumber.set("$rawVersion-paper")
-    versionName.set("$finalVersionName - Paper")
-    versionType.set(modrinthVersionType)
-    changelog.set(gitChangelog)
-    uploadFile.set(tasks.shadowJar.flatMap { it.archiveFile })
-    gameVersions.set(parsedMcVersions)
-    loaders.set(listOf("paper", "spigot", "folia"))
+    token = modrinthTokenEnv
+    ...
 }
-
-tasks.register<com.modrinth.minotaur.TaskModrinthUpload>("modrinthBungee") {
-    token.set(modrinthTokenEnv)
-    projectId.set(modrinthProjectIdProp)
-    versionNumber.set("$rawVersion-bungee")
-    versionName.set("$finalVersionName - BungeeCord")
-    versionType.set(modrinthVersionType)
-    changelog.set(gitChangelog)
-    uploadFile.set(project(bungeePath).tasks.named<org.gradle.api.tasks.bundling.AbstractArchiveTask>("shadowJar").flatMap { it.archiveFile })
-    gameVersions.set(parsedMcVersions)
-    loaders.set(listOf("bungeecord"))
-}
-
-tasks.register<com.modrinth.minotaur.TaskModrinthUpload>("modrinthSponge") {
-    token.set(modrinthTokenEnv)
-    projectId.set(modrinthProjectIdProp)
-    versionNumber.set("$rawVersion-sponge")
-    versionName.set("$finalVersionName - Sponge")
-    versionType.set(modrinthVersionType)
-    changelog.set(gitChangelog)
-    uploadFile.set(project(spongePath).tasks.named<org.gradle.api.tasks.bundling.AbstractArchiveTask>("shadowJar").flatMap { it.archiveFile })
-    gameVersions.set(parsedMcVersions)
-    loaders.set(listOf("sponge"))
-}
-
-tasks.register<com.modrinth.minotaur.TaskModrinthUpload>("modrinthVelocity") {
-    token.set(modrinthTokenEnv)
-    projectId.set(modrinthProjectIdProp)
-    versionNumber.set("$rawVersion-velocity")
-    versionName.set("$finalVersionName - Velocity")
-    versionType.set(modrinthVersionType)
-    changelog.set(gitChangelog)
-    uploadFile.set(project(velocityPath).tasks.named<org.gradle.api.tasks.bundling.AbstractArchiveTask>("shadowJar").flatMap { it.archiveFile })
-    gameVersions.set(listOf("1.21"))
-    loaders.set(listOf("velocity"))
-}
-
-tasks.register("modrinth") {
-    dependsOn("modrinthPaper", "modrinthBungee", "modrinthSponge", "modrinthVelocity")
-}
+*/

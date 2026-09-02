@@ -30,19 +30,19 @@ jobs:
     - name: Build with Gradle
       run: |
         chmod +x gradlew
-        ./gradlew build shadowJar
+        ./gradlew :vortexia-core-universal:shadowJar
 
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: vortexia-core-release
-        path: "vortexia-core-*/build/libs/*.jar"
+        name: vortexia-core-release-universal
+        path: "vortexia-core-universal/build/libs/*.jar"
 
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/v')
       uses: softprops/action-gh-release@v2
       with:
-        files: "vortexia-core-*/build/libs/*.jar"
+        files: "vortexia-core-universal/build/libs/*.jar"
         tag_name: ${{ github.ref_name }}
         name: Release ${{ github.ref_name }}
         draft: false
@@ -56,7 +56,7 @@ jobs:
       if: success() && startsWith(github.ref, 'refs/tags/v')
       run: |
         chmod +x gradlew
-        ./gradlew :vortexia-core-paper:publishPluginPublicationToHangar :vortexia-core-paper:modrinth
+        ./gradlew :vortexia-core-universal:publishHangarPublicationToHangar :vortexia-core-universal:modrinth
       env:
         HANGAR_API_TOKEN: ${{ secrets.HANGAR_API_TOKEN }}
         MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}

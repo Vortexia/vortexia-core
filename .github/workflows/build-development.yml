@@ -38,34 +38,13 @@ jobs:
     - name: Build with Gradle
       run: |
         chmod +x gradlew
-        ./gradlew build shadowJar
+        ./gradlew :vortexia-core-universal:shadowJar
 
-    - name: Upload Paper Jar Artifact
+    - name: Upload Universal Jar Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: vortexia-core-paper-alpha-b.${{ github.run_number }}
-        path: "vortexia-core-paper/build/libs/*.jar"
-        retention-days: 14
-
-    - name: Upload Velocity Jar Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: vortexia-core-velocity-alpha-b.${{ github.run_number }}
-        path: "vortexia-core-velocity/build/libs/*.jar"
-        retention-days: 14
-
-    - name: Upload Bungee Jar Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: vortexia-core-bungee-alpha-b.${{ github.run_number }}
-        path: "vortexia-core-bungee/build/libs/*.jar"
-        retention-days: 14
-
-    - name: Upload Sponge Jar Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: vortexia-core-sponge-alpha-b.${{ github.run_number }}
-        path: "vortexia-core-sponge/build/libs/*.jar"
+        name: vortexia-core-universal-alpha-b.${{ github.run_number }}
+        path: "vortexia-core-universal/build/libs/*.jar"
         retention-days: 14
 
     - name: Get Project Version
