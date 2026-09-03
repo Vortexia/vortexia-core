@@ -38,6 +38,7 @@ import me.alikuxac.vortexia.core.implementation.listener.security.AuthRestrictLi
 import me.alikuxac.vortexia.core.implementation.listener.citizen.CitizenCardListener;
 import me.alikuxac.vortexia.core.implementation.listener.item.ItemCraftListener;
 import me.alikuxac.vortexia.core.implementation.listener.system.UpdateNotifyListener;
+import me.alikuxac.vortexia.core.core.network.NetworkSyncManager;
 import me.alikuxac.vortexia.core.utils.UpdateChecker;
 
 import me.alikuxac.vortexia.core.core.service.InventorySyncManager;
@@ -69,6 +70,7 @@ public final class VortexiaCore extends JavaPlugin {
     private CoreGridManager gridManager;
     private CoreCustomRecipeManager customRecipeManager;
     private UpdateChecker updateChecker;
+    private NetworkSyncManager networkSyncManager;
 
     @Override
     public void onLoad() {
@@ -151,6 +153,9 @@ public final class VortexiaCore extends JavaPlugin {
 
         this.wailaTask = new WailaTask(this);
 
+        this.networkSyncManager = new NetworkSyncManager(this);
+        this.networkSyncManager.registerChannels();
+
         // Start WAILA periodic task
         if (this.schedulerService.isFolia()) {
             org.bukkit.Bukkit.getGlobalRegionScheduler().runAtFixedRate(this, t -> this.wailaTask.run(), 1L, 4L);
@@ -171,6 +176,9 @@ public final class VortexiaCore extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(
                 new PlayerListener(this),
+                this);
+        getServer().getPluginManager().registerEvents(
+                new me.alikuxac.vortexia.core.implementation.listener.player.SubscriptionDisconnectListener(this),
                 this);
         getServer().getPluginManager().registerEvents(
                 new CitizenCardListener(this),
@@ -273,6 +281,9 @@ public final class VortexiaCore extends JavaPlugin {
 
         if (wailaTask != null) {
             wailaTask.cleanup();
+        }
+        if (networkSyncManager != null) {
+            networkSyncManager.unregisterChannels();
         }
         if (wirelessNetworkRegistry != null) {
             wirelessNetworkRegistry.clear();
@@ -386,5 +397,9 @@ public final class VortexiaCore extends JavaPlugin {
 
     public UpdateChecker getUpdateChecker() {
         return updateChecker;
+    }
+
+    public NetworkSyncManager getNetworkSyncManager() {
+        return networkSyncManager;
     }
 }

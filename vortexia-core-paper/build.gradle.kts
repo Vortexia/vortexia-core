@@ -11,7 +11,7 @@ dependencies {
     if (findProject(":vortexia-api") != null) {
         implementation(project(":vortexia-api"))
     } else {
-        implementation("com.github.Vortexia:vortexia-api:v1.3.1")
+        implementation("com.github.Vortexia:vortexia-api:v1.3.2")
     }
 
     compileOnly("io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT")
@@ -114,10 +114,30 @@ val hangarProjectIdProp = project.findProperty("hangarProjectID") as? String ?: 
 val githubReleaseUrl = "https://github.com/Vortexia/vortexia-core/releases/tag/$refName"
 val modrinthTokenEnv = System.getenv("MODRINTH_TOKEN")
 
-// Modrinth Tasks commented out until Minotaur DSL syntax is configured properly
-/*
-tasks.register<com.modrinth.minotaur.TaskModrinthUpload>("modrinthPaper") {
-    token = modrinthTokenEnv
-    ...
+tasks.register("modrinthPaper") {
+    doLast {
+        logger.lifecycle("Modrinth paper publish placeholder")
+    }
 }
-*/
+
+tasks.register("modrinthBungee") {
+    doLast {
+        logger.lifecycle("Modrinth bungee publish placeholder")
+    }
+}
+
+tasks.register("modrinthSponge") {
+    doLast {
+        logger.lifecycle("Modrinth sponge publish placeholder")
+    }
+}
+
+tasks.register("modrinthVelocity") {
+    doLast {
+        logger.lifecycle("Modrinth velocity publish placeholder")
+    }
+}
+
+tasks.named("modrinth") {
+    dependsOn("modrinthPaper", "modrinthBungee", "modrinthSponge", "modrinthVelocity")
+}
