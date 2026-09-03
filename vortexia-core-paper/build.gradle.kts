@@ -114,7 +114,6 @@ val hangarProjectIdProp = project.findProperty("hangarProjectID") as? String ?: 
 val githubReleaseUrl = "https://github.com/Vortexia/vortexia-core/releases/tag/$refName"
 val modrinthTokenEnv = System.getenv("MODRINTH_TOKEN")
 
-<<<<<<< HEAD
 tasks.register("modrinthPaper") {
     doLast {
         logger.lifecycle("Modrinth paper publish placeholder")
@@ -141,12 +140,4 @@ tasks.register("modrinthVelocity") {
 
 tasks.named("modrinth") {
     dependsOn("modrinthPaper", "modrinthBungee", "modrinthSponge", "modrinthVelocity")
-=======
-// Modrinth Tasks commented out until Minotaur DSL syntax is configured properly
-/*
-tasks.register<com.modrinth.minotaur.TaskModrinthUpload>("modrinthPaper") {
-    token = modrinthTokenEnv
-    ...
->>>>>>> origin/development
 }
-*/
