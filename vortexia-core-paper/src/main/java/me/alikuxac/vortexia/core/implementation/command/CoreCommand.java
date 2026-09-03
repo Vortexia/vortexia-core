@@ -24,6 +24,7 @@ public class CoreCommand implements BaseCommand {
   private final List<SubCommand> subCommands = new ArrayList<>();
 
   public CoreCommand() {
+    this.registerSubCommand(this::getHelpSubcommand);
     this.registerSubCommand(this::getReloadSubcommand);
     this.registerSubCommand(this::getUpdateSubcommand);
     this.registerSubCommand(this::getRestoreSubcommand);
@@ -49,6 +50,17 @@ public class CoreCommand implements BaseCommand {
   private void execute(CommandSender sender, CommandArguments args) {
     sender.sendMessage("§bVortexiaCore §7version " + VortexiaCore.getInstance().getPluginMeta().getVersion());
     sender.sendMessage("§7Use §f/vortexia help §7to see available commands.");
+  }
+
+  private CommandAPICommand getHelpSubcommand() {
+    return new CommandAPICommand("help")
+        .executes((sender, args) -> {
+          sender.sendMessage("§b=== Vortexia Help ===");
+          sender.sendMessage("§f/vx help §7- Hiển thị menu trợ giúp này");
+          sender.sendMessage("§f/vx reload §7- Tải lại cấu hình plugin");
+          sender.sendMessage("§f/vx update §7- Kiểm tra cập nhật plugin");
+          sender.sendMessage("§f/vx restore <cccd> <timestamp> §7- Khôi phục kho đồ từ snapshot");
+        });
   }
 
   private CommandAPICommand getRestoreSubcommand() {

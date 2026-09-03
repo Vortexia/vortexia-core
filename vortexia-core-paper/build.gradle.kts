@@ -110,31 +110,11 @@ val mcVersionsProp = project.findProperty("mcVersions") as? String ?: "1.21"
 val parsedMcVersions = mcVersionsProp.split(",").map { it.trim() }
 val modrinthProjectIdProp = project.findProperty("modrinthProjectID") as? String ?: "VxHFxXAM"
 val hangarProjectIdProp = project.findProperty("hangarProjectID") as? String ?: "vortexia-core"
-val gitChangelog = System.getenv("COMMIT_MESSAGE") ?: "No changelog provided."
 
-hangarPublish {
-    publications.register("plugin") {
-        version.set(rawVersion)
-        id.set(hangarProjectIdProp)
-        channel.set(hangarChannel)
-        changelog.set(gitChangelog)
-        apiKey.set(System.getenv("HANGAR_API_TOKEN"))
-
-        platforms {
-            register(io.papermc.hangarpublishplugin.model.Platforms.PAPER) {
-                jar.set(tasks.shadowJar.flatMap { it.archiveFile })
-                platformVersions.set(parsedMcVersions)
-            }
-            register(io.papermc.hangarpublishplugin.model.Platforms.VELOCITY) {
-                jar.set(project(velocityPath).tasks.named<org.gradle.api.tasks.bundling.AbstractArchiveTask>("shadowJar").flatMap { it.archiveFile })
-                platformVersions.set(listOf(project.findProperty("velocityVersion") as? String ?: "3.4-3.5"))
-            }
-        }
-    }
-}
-
+val githubReleaseUrl = "https://github.com/Vortexia/vortexia-core/releases/tag/$refName"
 val modrinthTokenEnv = System.getenv("MODRINTH_TOKEN")
 
+<<<<<<< HEAD
 tasks.register("modrinthPaper") {
     doLast {
         logger.lifecycle("Modrinth paper publish placeholder")
@@ -161,4 +141,12 @@ tasks.register("modrinthVelocity") {
 
 tasks.named("modrinth") {
     dependsOn("modrinthPaper", "modrinthBungee", "modrinthSponge", "modrinthVelocity")
+=======
+// Modrinth Tasks commented out until Minotaur DSL syntax is configured properly
+/*
+tasks.register<com.modrinth.minotaur.TaskModrinthUpload>("modrinthPaper") {
+    token = modrinthTokenEnv
+    ...
+>>>>>>> origin/development
 }
+*/
