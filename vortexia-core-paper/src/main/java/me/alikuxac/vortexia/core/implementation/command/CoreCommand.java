@@ -56,10 +56,10 @@ public class CoreCommand implements BaseCommand {
     return new CommandAPICommand("help")
         .executes((sender, args) -> {
           sender.sendMessage("§b=== Vortexia Help ===");
-          sender.sendMessage("§f/vx help §7- Hiển thị menu trợ giúp này");
-          sender.sendMessage("§f/vx reload §7- Tải lại cấu hình plugin");
-          sender.sendMessage("§f/vx update §7- Kiểm tra cập nhật plugin");
-          sender.sendMessage("§f/vx restore <cccd> <timestamp> §7- Khôi phục kho đồ từ snapshot");
+          sender.sendMessage("§f/vx help §7- Display this help menu");
+          sender.sendMessage("§f/vx reload §7- Reload plugin configurations");
+          sender.sendMessage("§f/vx update §7- Check for plugin updates");
+          sender.sendMessage("§f/vx restore <cid> <timestamp> §7- Restore inventory snapshot");
         });
   }
 
