@@ -33,6 +33,11 @@ public class PlayerListener implements Listener {
     // Apply Failsafe lock (clear inventory and cache locally)
     plugin.getInventorySyncManager().applyFailsafeLock(player);
 
+    // Trigger mod detector check on join
+    if (plugin.getModDetectorService() != null) {
+      plugin.getModDetectorService().onPlayerJoin(player);
+    }
+
     plugin.getLoggerService().debug("Player joining: " + player.getName());
 
     // Identity check

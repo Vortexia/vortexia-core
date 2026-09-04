@@ -29,6 +29,7 @@ import me.alikuxac.vortexia.core.implementation.item.CitizenCardManager;
 import me.alikuxac.vortexia.core.implementation.item.CoreItemRegistry;
 import me.alikuxac.vortexia.core.implementation.gui.SecurityGUI;
 import me.alikuxac.vortexia.core.implementation.gui.GuideGUI;
+import me.alikuxac.vortexia.core.implementation.hud.HudManager;
 import me.alikuxac.vortexia.core.implementation.waila.CoreWailaManager;
 import me.alikuxac.vortexia.core.implementation.waila.WailaTask;
 import me.alikuxac.vortexia.core.implementation.recipe.CoreCustomRecipeManager;
@@ -71,6 +72,8 @@ public final class VortexiaCore extends JavaPlugin {
     private CoreCustomRecipeManager customRecipeManager;
     private UpdateChecker updateChecker;
     private NetworkSyncManager networkSyncManager;
+    private HudManager hudManager;
+    private me.alikuxac.vortexia.core.core.service.ModDetectorService modDetectorService;
 
     @Override
     public void onLoad() {
@@ -150,6 +153,8 @@ public final class VortexiaCore extends JavaPlugin {
         this.customRecipeManager = new CoreCustomRecipeManager();
         this.guideGUI = new GuideGUI(this);
         this.wailaManager = new CoreWailaManager();
+        this.hudManager = new HudManager();
+        this.modDetectorService = new me.alikuxac.vortexia.core.core.service.ModDetectorService(this);
 
         this.wailaTask = new WailaTask(this);
 
@@ -282,6 +287,9 @@ public final class VortexiaCore extends JavaPlugin {
         if (wailaTask != null) {
             wailaTask.cleanup();
         }
+        if (hudManager != null) {
+            hudManager.clear();
+        }
         if (networkSyncManager != null) {
             networkSyncManager.unregisterChannels();
         }
@@ -402,4 +410,13 @@ public final class VortexiaCore extends JavaPlugin {
     public NetworkSyncManager getNetworkSyncManager() {
         return networkSyncManager;
     }
+
+    public HudManager getHudManager() {
+        return hudManager;
+    }
+
+    public me.alikuxac.vortexia.core.core.service.ModDetectorService getModDetectorService() {
+        return modDetectorService;
+    }
 }
+

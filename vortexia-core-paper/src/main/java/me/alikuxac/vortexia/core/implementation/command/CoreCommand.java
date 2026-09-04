@@ -28,6 +28,7 @@ public class CoreCommand implements BaseCommand {
     this.registerSubCommand(this::getReloadSubcommand);
     this.registerSubCommand(this::getUpdateSubcommand);
     this.registerSubCommand(this::getRestoreSubcommand);
+    this.registerSubCommand(this::getHudSubcommand);
   }
 
   public void registerSubCommand(SubCommand sub) {
@@ -57,10 +58,53 @@ public class CoreCommand implements BaseCommand {
         .executes((sender, args) -> {
           sender.sendMessage("§b=== Vortexia Help ===");
           sender.sendMessage("§f/vx help §7- Display this help menu");
+          sender.sendMessage("§f/vx hud toggle [on|off] §7- Toggle HUD display");
           sender.sendMessage("§f/vx reload §7- Reload plugin configurations");
           sender.sendMessage("§f/vx update §7- Check for plugin updates");
           sender.sendMessage("§f/vx restore <cid> <timestamp> §7- Restore inventory snapshot");
         });
+  }
+
+  private CommandAPICommand getHudSubcommand() {
+    return new CommandAPICommand("hud")
+        .withSubcommand(
+            new CommandAPICommand("toggle")
+                .withOptionalArguments(new dev.jorel.commandapi.arguments.StringArgument("state"))
+                .executes((sender, args) -> {
+                  if (!(sender instanceof Player player)) {
+                    sender.sendMessage("§c[Vortexia] Only players can toggle HUD display.");
+                    return;
+                  }
+
+                  VortexiaCore core = VortexiaCore.getInstance();
+                  if (core.getHudManager() == null) {
+                    sender.sendMessage("§c[Vortexia] HUD Manager is not initialized.");
+                    return;
+                  }
+
+                  String stateArg = (String) args.get("state");
+                  boolean newStatus;
+                  if (stateArg != null) {
+                    if (stateArg.equalsIgnoreCase("on") || stateArg.equalsIgnoreCase("enable") || stateArg.equalsIgnoreCase("true")) {
+                      core.getHudManager().setHudEnabled(player, true);
+                      newStatus = true;
+                    } else if (stateArg.equalsIgnoreCase("off") || stateArg.equalsIgnoreCase("disable") || stateArg.equalsIgnoreCase("false")) {
+                      core.getHudManager().setHudEnabled(player, false);
+                      newStatus = false;
+                    } else {
+                      newStatus = core.getHudManager().toggleHud(player);
+                    }
+                  } else {
+                    newStatus = core.getHudManager().toggleHud(player);
+                  }
+
+                  if (newStatus) {
+                    player.sendMessage("§a[Vortexia] HUD display enabled!");
+                  } else {
+                    player.sendMessage("§c[Vortexia] HUD display disabled!");
+                  }
+                })
+        );
   }
 
   private CommandAPICommand getRestoreSubcommand() {

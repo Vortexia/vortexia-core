@@ -8,8 +8,30 @@ system:
   prefix: "&8[&bVortexia&8] &f"
   
   # Debug Mode: Enable to see detailed logs in console
-  # Useful for development and troubleshooting command registrations
   debug: false
+
+# Machine Vision & Raycast Settings
+raycast:
+  # Maximum distance to inspect blocks/machines (in blocks)
+  max-distance: 5
+
+# Network Data Sync Settings
+network-sync:
+  # Minimum interval between delta sync packets sent to client (in ticks)
+  min-sync-interval-ticks: 2
+  
+  # Thresholds for triggering delta sync updates
+  delta-thresholds:
+    energy: 50
+    progress: 1.0
+
+# Security & PIN Failsafe Settings
+security:
+  pin:
+    # Maximum failed PIN attempts allowed before lockout
+    max-attempts: 3
+    # Lockout duration in seconds after max failed attempts
+    lockout-seconds: 300
 
 # Command Management Settings
 commands:
@@ -19,7 +41,7 @@ commands:
   aliases: 
     - "vx"
 
-# Identity & Flex-Mode Settings (For upcoming features)
+# Identity & Flex-Mode Settings
 identity:
   flex-mode:
     # Automatically detect server mode (Online vs Offline)
@@ -94,10 +116,17 @@ update-checker:
   # Notify players with the 'vortexia.admin' permission when they join
   notify-admins: true
 
-# WAILA & Display HUD Configuration
+# WAILA & Display HUD Configuration (Vanilla Fallback)
 waila:
   # Enable the WAILA look-at display system
   enabled: true
+  
+  # Vanilla Fallback Display Settings (Used if player does not have client mod installed)
+  hud-fallback:
+    # Display mode: "ACTIONBAR", "TITLE", or "BOSSBAR"
+    display-mode: "ACTIONBAR"
+    # Update frequency in ticks
+    update-interval-ticks: 2
   
   # The screen position of the WAILA display.
   # Allowed values (9 positions):
@@ -112,10 +141,7 @@ inventory-sync:
   enabled: true
   
   # The maximum number of historical inventory snapshots to keep per player.
-  # Adjust this value to manage database storage consumption. (Recommended: 5 to 20)
   keep-snapshots-limit: 10
   
   # How often to run periodic inventory auto-saves for all authenticated players (in ticks).
-  # 1200 ticks = 1 minute, 6000 ticks = 5 minutes, 12000 ticks = 10 minutes.
-  # Set to a very high value or disable the system if you want to rely only on Join/Quit.
-  auto-save-interval-ticks: 6000
+  auto-save-interval-ticks: 6000

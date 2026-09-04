@@ -41,6 +41,7 @@ public class WailaTask implements Runnable {
         // Read dynamic configuration
         boolean enabled = plugin.getConfig().getBoolean("waila.enabled", true);
         String position = plugin.getConfig().getString("waila.position", "top - middle").toLowerCase().trim();
+        int maxDistance = plugin.getConfig().getInt("raycast.max-distance", 5);
 
         if (!enabled) {
             // If system is disabled: clean up all displays immediately
@@ -49,16 +50,22 @@ public class WailaTask implements Runnable {
         }
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (!player.isOnline()) {
+            if (!player.isOnline() || (plugin.getHudManager() != null && !plugin.getHudManager().isHudEnabled(player))) {
+                if (plugin.getNetworkSyncManager() != null) {
+                    plugin.getNetworkSyncManager().getSubscriptionManager().unsubscribeAll(player);
+                }
                 removePlayerHUD(player);
                 continue;
             }
 
-            // Raycast player vision within 6 blocks to detect both Blocks and Entities
+            // Check if player has custom client mod installed
+            boolean isModdedClient = plugin.getModDetectorService() != null && plugin.getModDetectorService().isModded(player);
+
+            // Raycast player vision within configured max-distance blocks to detect both Blocks and Entities
             RayTraceResult rayTrace = player.getWorld().rayTrace(
                 player.getEyeLocation(),
                 player.getLocation().getDirection(),
-                6,
+                maxDistance,
                 FluidCollisionMode.NEVER,
                 true,
                 0.2,
@@ -84,14 +91,12 @@ public class WailaTask implements Runnable {
                     
                     double health = living.getHealth();
                     Attribute maxHealthAttr = null;
-                    // 1. Try Registry (1.21+)
+                    // Attribute lookup compatible with Paper 1.21.1+
                     try {
-                        maxHealthAttr = Registry.ATTRIBUTE.get(NamespacedKey.minecraft("generic.max_health"));
+                        maxHealthAttr = Attribute.GENERIC_MAX_HEALTH;
                     } catch (Throwable t1) {
-                        // 2. Try reflection valueOf (for older versions where it was an Enum)
                         try {
-                            java.lang.reflect.Method valueOf = Attribute.class.getMethod("valueOf", String.class);
-                            maxHealthAttr = (Attribute) valueOf.invoke(null, "GENERIC_MAX_HEALTH");
+                            maxHealthAttr = Registry.ATTRIBUTE.get(NamespacedKey.minecraft("max_health"));
                         } catch (Throwable ignored) {}
                     }
 
@@ -118,7 +123,9 @@ public class WailaTask implements Runnable {
 
                     if (plugin.getNetworkSyncManager() != null) {
                         try {
-                            long blockPos = hitBlock.getBlockKey();
+                            long blockPos = ((long) hitBlock.getX() & 0x3FFFFFFL) << 38 
+                                          | ((long) hitBlock.getZ() & 0x3FFFFFFL) << 12 
+                                          | ((long) hitBlock.getY() & 0xFFFL);
                             plugin.getNetworkSyncManager().getSubscriptionManager().updateActiveSubscription(player, blockPos);
 
                             short machineId = (short) (Math.abs(hitBlock.getType().hashCode()) & 0x7FFF);
@@ -154,7 +161,13 @@ public class WailaTask implements Runnable {
             // Handle left/right alignment by padding spaces (simulated alignment)
             Component aligned = applyAlignment(containerJoined, position);
 
-            // Categorize and display based on 9 positions (3 main channels: top -> BossBar, bottom -> ActionBar, center -> Subtitle)
+            // If player is using Modded client, network packets handle rendering - remove vanilla display
+            if (isModdedClient) {
+                removePlayerHUD(player);
+                continue;
+            }
+
+            // Categorize and display based on 9 positions for Vanilla players
             if (position.startsWith("top")) {
                 // Clear existing title and action bar if any
                 player.clearTitle();

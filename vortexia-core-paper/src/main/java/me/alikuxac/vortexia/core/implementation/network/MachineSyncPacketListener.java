@@ -31,6 +31,9 @@ public class MachineSyncPacketListener implements PluginMessageListener {
         }
 
         if (NetworkSyncManager.SUBSCRIBE_CHANNEL.equals(channel)) {
+            if (plugin.getModDetectorService() != null) {
+                plugin.getModDetectorService().markAsModded(player);
+            }
             handleSubscribe(player, message);
             return;
         } else if (NetworkSyncManager.UNSUBSCRIBE_CHANNEL.equals(channel)) {
@@ -42,8 +45,22 @@ public class MachineSyncPacketListener implements PluginMessageListener {
             return;
         }
 
+        if (plugin.getModDetectorService() != null) {
+            plugin.getModDetectorService().markAsModded(player);
+        }
+
         ByteBuf buf = Unpooled.wrappedBuffer(message);
         try {
+            if (NetworkChannels.HUD_CHANNEL.equals(channel) && buf.readableBytes() == 1) {
+                byte toggleFlag = buf.readByte();
+                boolean enable = toggleFlag != 0;
+                if (plugin.getHudManager() != null) {
+                    plugin.getHudManager().setHudEnabled(player, enable);
+                    plugin.getLoggerService().debug("Received HUD toggle packet from " + player.getName() + ": " + enable);
+                }
+                return;
+            }
+
             if (buf.readableBytes() < 15) {
                 plugin.getLoggerService().warn("Received malformed binary packet on channel " + channel + " (less than 15 bytes)");
                 return;
