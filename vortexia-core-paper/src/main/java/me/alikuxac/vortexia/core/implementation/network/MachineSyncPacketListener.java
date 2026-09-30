@@ -54,9 +54,12 @@ public class MachineSyncPacketListener implements PluginMessageListener {
             if (NetworkChannels.HUD_CHANNEL.equals(channel) && buf.readableBytes() == 1) {
                 byte toggleFlag = buf.readByte();
                 boolean enable = toggleFlag != 0;
+                if (plugin.getModDetectorService() != null) {
+                    plugin.getModDetectorService().setModdedStatus(player, enable);
+                }
                 if (plugin.getHudManager() != null) {
-                    plugin.getHudManager().setHudEnabled(player, enable);
-                    plugin.getLoggerService().debug("Received HUD toggle packet from " + player.getName() + ": " + enable);
+                    plugin.getHudManager().setHudEnabled(player, true); // Keep HUD system active, let WailaTask render server fallback
+                    plugin.getLoggerService().debug("Received HUD toggle packet from " + player.getName() + ": Client Mod Enabled = " + enable);
                 }
                 return;
             }

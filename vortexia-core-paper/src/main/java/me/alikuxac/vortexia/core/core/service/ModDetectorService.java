@@ -20,15 +20,21 @@ public class ModDetectorService {
         this.plugin = plugin;
     }
 
+    public void setModdedStatus(Player player, boolean isModded) {
+        if (player == null) return;
+        Boolean previous = moddedPlayers.put(player.getUniqueId(), isModded);
+        if (isModded && (previous == null || !previous)) {
+            plugin.getLoggerService().info("⚡ Player " + player.getName() + " connected using [Vortexia HUD Mod]!");
+        } else if (!isModded && (previous != null && previous)) {
+            plugin.getLoggerService().info("ℹ️ Player " + player.getName() + " disabled Client HUD Mod. Fallback to Server HUD.");
+        }
+    }
+
     /**
      * Marks a player as having the client mod installed.
      */
     public void markAsModded(Player player) {
-        if (player == null) return;
-        Boolean previous = moddedPlayers.put(player.getUniqueId(), true);
-        if (previous == null || !previous) {
-            plugin.getLoggerService().info("⚡ Player " + player.getName() + " connected using [Vortexia HUD Mod]!");
-        }
+        setModdedStatus(player, true);
     }
 
     /**
