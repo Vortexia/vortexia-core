@@ -2,44 +2,47 @@ name: Build Release (Master/Main)
 
 on:
   push:
-    tags: [ "v*" ]
+    tags:
+      - 'v*'
+      - '!v*-beta*'
   pull_request:
     branches: [ "main", "master" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: "!startsWith(github.event.head_commit.message, '[Ci skip]')"
     permissions:
       contents: write
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Set up JDK 21
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         java-version: '21'
         distribution: 'temurin'
 
     - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
+      uses: gradle/actions/setup-gradle@v6
 
     - name: Build with Gradle
       run: |
         chmod +x gradlew
-        ./gradlew build shadowJar
+        ./gradlew :vortexia-core-universal:shadowJar
 
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: vortexia-core-release
-        path: build/libs/*.jar
+        name: vortexia-core-release-universal
+        path: "vortexia-core-universal/build/libs/*.jar"
 
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/v')
       uses: softprops/action-gh-release@v2
       with:
-        files: build/libs/*.jar
+        files: "vortexia-core-universal/build/libs/*.jar"
         tag_name: ${{ github.ref_name }}
         name: Release ${{ github.ref_name }}
         draft: false
@@ -48,3 +51,14 @@ jobs:
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Publish to Hangar and Modrinth (Release)
+      if: success() && startsWith(github.ref, 'refs/tags/v')
+      run: |
+        chmod +x gradlew
+        ./gradlew :vortexia-core-universal:publishHangarPublicationToHangar :vortexia-core-universal:modrinth
+      env:
+        HANGAR_API_TOKEN: ${{ secrets.HANGAR_API_TOKEN }}
+        MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+        COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+

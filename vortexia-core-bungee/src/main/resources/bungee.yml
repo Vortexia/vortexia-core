@@ -1,0 +1,5 @@
+name: VortexiaCore
+version: ${version}
+main: me.alikuxac.vortexia.core.bungee.VortexiaBungee
+author: Alikuxac
+description: Multi-platform proxy support for Vortexia core

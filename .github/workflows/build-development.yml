@@ -3,56 +3,54 @@ name: Build Development
 on:
   push:
     branches: [ "development" ]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+      - '.gitattributes'
   pull_request:
     branches: [ "development" ]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+      - '.gitattributes'
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: "!startsWith(github.event.head_commit.message, '[Ci skip]')"
     permissions:
       contents: write
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Set up JDK 21
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         java-version: '21'
         distribution: 'temurin'
 
     - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
+      uses: gradle/actions/setup-gradle@v6
 
     - name: Build with Gradle
       run: |
         chmod +x gradlew
-        ./gradlew build shadowJar
+        ./gradlew :vortexia-core-universal:shadowJar
 
-    - name: Upload Build Artifact
+    - name: Upload Universal Jar Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: vortexia-core-dev
-        path: build/libs/*.jar
+        name: vortexia-core-universal-alpha-b.${{ github.run_number }}
+        path: "vortexia-core-universal/build/libs/*.jar"
+        retention-days: 14
 
-    - name: Update Dev-Snapshot Tag
-      if: github.event_name == 'push' && github.ref == 'refs/heads/development'
+    - name: Get Project Version
+      id: get_version
       run: |
-        git tag -f Dev-Snapshot
-        git push origin Dev-Snapshot --force
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        chmod +x gradlew
+        VERSION=$(./gradlew :vortexia-core-paper:properties -q | grep "^version:" | awk '{print $2}')
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-    - name: Create/Update Dev Release
-      if: github.event_name == 'push' && github.ref == 'refs/heads/development'
-      uses: ncipollo/release-action@v1
-      with:
-        artifacts: "build/libs/*.jar"
-        tag: "Dev-Snapshot"
-        name: "Development Snapshot"
-        allowUpdates: true
-        replacesArtifacts: true
-        prerelease: true
-        makeLatest: false
-        body: "Automated snapshot build from development branch. Always reflects the latest commit."
-        token: ${{ secrets.GITHUB_TOKEN }}

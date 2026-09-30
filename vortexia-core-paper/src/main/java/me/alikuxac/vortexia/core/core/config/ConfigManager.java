@@ -1,0 +1,36 @@
+// Developed by alikuxac - Project Vortexia
+package me.alikuxac.vortexia.core.core.config;
+
+import me.alikuxac.vortexia.core.VortexiaCore;
+import org.bukkit.configuration.file.FileConfiguration;
+
+public class ConfigManager {
+
+  private final VortexiaCore plugin;
+
+  public ConfigManager(VortexiaCore plugin) {
+    this.plugin = plugin;
+  }
+
+  public void loadConfig() {
+    plugin.saveDefaultConfig();
+    plugin.reloadConfig();
+  }
+
+  public void reload() {
+    plugin.reloadConfig();
+    plugin.getLoggerService().setDebug(plugin.getConfig().getBoolean("debug", false));
+  }
+
+  public FileConfiguration getConfig() {
+    return plugin.getConfig();
+  }
+
+  public String getMessage(String key) {
+    return plugin.getConfig().getString("messages." + key, key);
+  }
+
+  public String getMessage(String key, String defaultValue) {
+    return plugin.getConfig().getString("messages." + key, defaultValue);
+  }
+}

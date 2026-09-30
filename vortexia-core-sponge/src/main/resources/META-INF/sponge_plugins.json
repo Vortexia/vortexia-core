@@ -1,0 +1,15 @@
+[
+  {
+    "dependency": {
+      "spongeapi": "10.0.0"
+    },
+    "id": "vortexiacore",
+    "name": "VortexiaCore",
+    "version": "${version}",
+    "description": "Multi-platform support for Vortexia core",
+    "entrypoint": "me.alikuxac.vortexia.core.sponge.VortexiaSponge",
+    "authors": [
+      "Alikuxac"
+    ]
+  }
+]
