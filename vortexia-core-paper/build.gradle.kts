@@ -20,6 +20,7 @@ dependencies {
     annotationProcessor("dev.jorel:commandapi-annotations:11.1.0")
 
     compileOnly("fr.xephi:authme-core:6.0.0-SNAPSHOT")
+    compileOnly("me.clip:placeholderapi:2.11.6")
     
     // SQLite/MySQL/HikariCP/Caffeine
     implementation("com.zaxxer:HikariCP:5.1.0")

@@ -3,7 +3,7 @@ version: ${version}
 main: me.alikuxac.vortexia.core.VortexiaCore
 api-version: '1.21'
 author: Alikuxac
-softdepend: [AuthMe]
+softdepend: [AuthMe, PlaceholderAPI]
 permissions:
   vortexia.admin:
     description: "Full administrative access to VortexiaCore"

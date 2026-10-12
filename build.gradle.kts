@@ -35,6 +35,7 @@ subprojects {
         maven("https://repo.panda-lang.org/releases")
         maven("https://jitpack.io")
         maven("https://mvn.wesjd.net/")
+        maven("https://repo.extendedclip.com/releases/")
     }
 
     configure<org.gradle.api.plugins.JavaPluginExtension> {

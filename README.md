@@ -9,91 +9,86 @@
 [![License](https://img.shields.io/github/license/Vortexia/vortexia-core)](LICENSE)
 
 > [!WARNING]
-> This is an **experimental** build of Vortexia Core under active development. Features are subject to change, and APIs or behaviors may break at any time. Use at your own risk in production environments!
+> Experimental build under active development. APIs and behaviors may break between builds.
 
-The core module of the **Vortexia** Minecraft Plugin ecosystem (version 1.21+). This module is responsible for Storage, Identity handling, Security (including 2FA PIN protection & Auth Hook systems), Wireless Networks, Custom Grids, and on-screen HUD displays.
+Core module of the **Vortexia** Minecraft plugin ecosystem (1.21+). Handles storage, player identity, two-factor PIN authentication, auth hooks, wireless networks, multiblock grids, HUD/WAILA overlays, and PlaceholderAPI expansion.
 
 ## Features
 
-- **Storage & Caching**: Manages data operations across various platforms such as MySQL and SQLite, along with highly optimized caching powered by Caffeine.
-- **Identity Security (2FA PIN)**: The `IdentityMigrationHelper` mechanism prevents Account Hijacking when a player changes their name (changing UUID) by requiring a PIN verification before syncing changes to the database.
-- **AuthHook System (Delayed Execution)**: Resolves conflicts between Vortexia's PIN Security and external authentication plugins (e.g., AuthMe). Vortexia pauses its operations to let the Auth Plugin handle the baseline login before requiring the 2nd-layer PIN.
-- **Dynamic Grid & Economy**: A ticking multi-block network manager (`CoreGridManager`) handling energy routing, machinery linkages, and modular connections.
-- **WAILA HUD Display**: A real-time, highly-configurable look-at block display (`CoreWailaManager`) featuring support for Folia/Paper and customizable screen position parameters.
-- **Interactive Guide Book & GUI**: A user-friendly interface (`GuideGUI`) allowing players to learn plugin systems, view recipes (`RecipeViewerGUI`), and retrieve custom items if authorized.
-- **Custom Item & Recipe Registries**: Dynamically registers unique custom items (`CoreItemRegistry`) and advanced recipes (`CoreCustomRecipeManager`).
-- **Item Owner Tagging**: Automatically tags the crafter's UUID and username onto tools, weapons, and armors upon crafting. This ownership is safely preserved and transferred when repairing (Anvil), upgrading (Smithing Table), or refining (Grindstone) until the item is completely broken/destroyed.
-- **Shadow Inventory Sync**: Safe inventory and Ender Chest sync and recovery based on Citizen ID (CID) to prevent data loss or duplicate items during online-mode flips. Features history snapshot logs.
-- **Loader-Aware Update Checker**: Scans for the latest GitHub releases in the background and dynamically filters them based on the current server loader (e.g. Paper, Velocity, Sponge) to ensure version compatibility.
-- **CommandAPI & NBT**: Integrates deeply with specialized libraries for Advanced Command Parsing and System Item Handling.
+- **Storage & Caching**: SQLite and MySQL backends with Caffeine caching.
+- **Identity & PIN 2FA**: Tracks citizen cards and binds player data to Citizen IDs (CID). Blocks unauthorized access during name/UUID changes until verified by PIN.
+- **AuthHook Integration**: Delays PIN prompts until authentication plugins (such as AuthMe) finish the base login sequence.
+- **Multiblock Grid Engine**: Tick-driven power and machine networking.
+- **WAILA & HUD**: Real-time look-at HUD with Paper and Folia support.
+- **In-Game Guide & Recipe Viewer**: In-game interfaces for viewing items and recipes.
+- **Item Owner Tagging**: Binds crafter UUID and username to crafted gear; preserves metadata through anvil repair, smithing upgrades, and grindstone disenchanting.
+- **Inventory Sync**: CID-based inventory and Ender Chest snapshots for cross-server synchronization and backup recovery.
+- **PlaceholderAPI**: Exposes citizen profile, PIN state, issue dates, and arbitrary database metadata to other plugins.
+- **Platform-Aware Update Checker**: Background release checker filtered by server platform (Paper, Velocity, Sponge).
 
-## Quick Start
+## Requirements
 
-### Requirements
 - **Java**: 21
-- **Minecraft Loaders**:
-  - **Plugins**: Paper, Purpur, Folia, Spigot, Bukkit (1.21+)
-  - **Proxies**: BungeeCord, Velocity, Waterfall
-  - **Sponge**: Sponge v10+
+- **Platforms**:
+  - Paper, Purpur, Folia, Spigot (1.21+)
+  - Velocity, BungeeCord, Waterfall
+  - Sponge v10+
 
-### Local Build
-
-The system comes with `build_local.bat` for Windows users. Alternatively, you can run the Gradle Wrapper directly:
+## Build
 
 ```bash
-cd vortexia-core
 ./gradlew clean shadowJar
 ```
 
-Compiled jars will be placed in the `build/libs` directory.
+Artifacts are written to `build/libs/`.
 
-## Auth Hook System
+## PlaceholderAPI
 
-### Logic Flow (Auth Hook)
-Vortexia Core integrates the `IAuthHook` interface to automatically work seamlessly alongside other Auth plugins:
-- Instead of locking player actions the exact moment they join, the system delays the operation and shifts control to the Auth Plugin first.
-- If **AuthMe is present**: Requires the player to successfully log in before presenting the PIN Verification / PIN Setup prompt.
-- If **NO Auth Plugin is present**: Vortexia immediately acts as the sole security layer, prompting the PIN requirement the moment a player joins.
+Identifier: `%vortexia_<placeholder>%`
 
-### Adding a New API Hook
-Create a class implementing the `IAuthHook` interface under the `hook.impl` package and register it within the `VortexiaCore` main class:
-
-```java
-public class MyCustomAuthHook implements IAuthHook, Listener {
-    @Override
-    public boolean isInstalled() { return true; }
-
-    @Override
-    public boolean isAuthenticated(Player player) {
-        // Auth plugin logic here
-        return true; 
-    }
-}
-```
-
-Then register the hook in the Core's `onEnable()` method:
-```java
-this.authHookManager.registerHook(new MyCustomAuthHook(this));
-```
+| Placeholder | Description | Example Output |
+|:---|:---|:---|
+| `%vortexia_cccd%` | Citizen identification code | `VX-2026-081` |
+| `%vortexia_pin_status%` | PIN verification state | `VERIFIED` / `LOCKED` |
+| `%vortexia_created_date%` | Citizen profile creation date | `12/10/2026` |
+| `%vortexia_meta_<key>%` | Value from the `vortexia_metadata` table | `VIP_TIER_2` |
 
 ## Commands & Permissions
 
 | Command | Permission | Description |
 |:---|:---|:---|
-| `/pin setup <digits>` | `none` (default: true) | Sets up a new security PIN. |
-| `/pin verify <digits>`| `none` (default: true) | Unlocks the account when caught in Ghost Authentication (2FA). |
-| `/cccd` (aliases: `/profile`, `/id`) | `vortexia.command.cccd` | Opens your Citizen Profile GUI. |
-| `/cccd view [target]` | `vortexia.command.cccd.view` | Opens another player's Profile GUI interface. |
-| `/cccd get` (aliases: `/cccd withdraw`)| `vortexia.command.cccd.get` | Withdraws your physical Citizen ID card item. |
-| `/vortexia reload` | `vortexia.admin` | Reloads the plugin configuration. |
-| `/vortexia update` | `vortexia.admin` | Triggers a manual check for updates. |
-| `/vortexia restore <cccd> <timestamp>` | `vortexia.admin` | Restores player inventory from a specific snapshot timestamp. |
-| `/vortexia guide` (aliases: `/vortexia creative`, `/vortexia guidebook`) | `none` (requires `vortexia.creative.give` to take items) | Opens the dynamic Vortexia Guide Book GUI. |
+| `/pin setup <pin>` | none (default: all) | Sets account PIN. |
+| `/pin verify <pin>` | none (default: all) | Unlocks account when PIN verification is required. |
+| `/cccd` | `vortexia.command.cccd` | Opens citizen profile GUI. Aliases: `/profile`, `/id`. |
+| `/cccd view <player>` | `vortexia.command.cccd.view` | Opens another player's profile GUI. |
+| `/cccd get` | `vortexia.command.cccd.get` | Withdraws a physical Citizen ID card item. Alias: `/cccd withdraw`. |
+| `/vortexia guide` | none (`vortexia.creative.give` to take items) | Opens the guide book GUI. Aliases: `/vortexia creative`, `/vortexia guidebook`. |
+| `/vortexia reload` | `vortexia.admin` | Reloads configuration files. |
+| `/vortexia update` | `vortexia.admin` | Checks for updates immediately. |
+| `/vortexia restore <cccd> <timestamp>` | `vortexia.admin` | Restores an inventory snapshot from database records. |
+
+## AuthHook System
+
+Implement `IAuthHook` to integrate external auth plugins:
+
+```java
+public class CustomAuthHook implements IAuthHook, Listener {
+    @Override
+    public boolean isInstalled() { return true; }
+
+    @Override
+    public boolean isAuthenticated(Player player) {
+        return true;
+    }
+}
+```
+
+Register during plugin initialization:
+
+```java
+authHookManager.registerHook(new CustomAuthHook(this));
+```
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
-
----
-
-> *Copyright belongs to Team Vortexia | Core developed by: @alikuxac.*
+GNU General Public License v3.0. See [LICENSE](LICENSE).

@@ -4,7 +4,12 @@ package me.alikuxac.vortexia.core;
 import dev.jorel.commandapi.CommandAPI;
 import com.github.retrooper.packetevents.PacketEvents;
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import me.alikuxac.vortexia.api.VortexiaProvider;
 import me.alikuxac.vortexia.core.api.CoreVortexiaAPI;
@@ -21,10 +26,13 @@ import me.alikuxac.vortexia.core.core.storage.util.IdentityUtil;
 import me.alikuxac.vortexia.core.core.storage.util.IdentityMigrationHelper;
 import me.alikuxac.vortexia.core.core.hook.AuthHookManager;
 import me.alikuxac.vortexia.core.core.hook.impl.AuthMeHook;
+import me.alikuxac.vortexia.core.core.hook.impl.VortexiaPlaceholderExpansion;
 import me.alikuxac.vortexia.core.core.addon.CoreAddonManager;
 import me.alikuxac.vortexia.core.core.brain.VortexiaTaskEngine;
+import me.alikuxac.vortexia.core.core.network.NetworkSyncManager;
 import me.alikuxac.vortexia.core.core.network.wireless.CoreWirelessNetworkRegistry;
 import me.alikuxac.vortexia.core.core.grid.CoreGridManager;
+import me.alikuxac.vortexia.core.core.service.ModDetectorService;
 import me.alikuxac.vortexia.core.implementation.item.CitizenCardManager;
 import me.alikuxac.vortexia.core.implementation.item.CoreItemRegistry;
 import me.alikuxac.vortexia.core.implementation.gui.SecurityGUI;
@@ -34,12 +42,12 @@ import me.alikuxac.vortexia.core.implementation.waila.CoreWailaManager;
 import me.alikuxac.vortexia.core.implementation.waila.WailaTask;
 import me.alikuxac.vortexia.core.implementation.recipe.CoreCustomRecipeManager;
 import me.alikuxac.vortexia.core.implementation.listener.player.PlayerListener;
+import me.alikuxac.vortexia.core.implementation.listener.player.SubscriptionDisconnectListener;
 import me.alikuxac.vortexia.core.implementation.listener.security.SecurityPacketListener;
 import me.alikuxac.vortexia.core.implementation.listener.security.AuthRestrictListener;
 import me.alikuxac.vortexia.core.implementation.listener.citizen.CitizenCardListener;
 import me.alikuxac.vortexia.core.implementation.listener.item.ItemCraftListener;
 import me.alikuxac.vortexia.core.implementation.listener.system.UpdateNotifyListener;
-import me.alikuxac.vortexia.core.core.network.NetworkSyncManager;
 import me.alikuxac.vortexia.core.utils.UpdateChecker;
 
 import me.alikuxac.vortexia.core.core.service.InventorySyncManager;
@@ -73,7 +81,8 @@ public final class VortexiaCore extends JavaPlugin {
     private UpdateChecker updateChecker;
     private NetworkSyncManager networkSyncManager;
     private HudManager hudManager;
-    private me.alikuxac.vortexia.core.core.service.ModDetectorService modDetectorService;
+    private ModDetectorService modDetectorService;
+    private VortexiaPlaceholderExpansion placeholderExpansion;
 
     @Override
     public void onLoad() {
@@ -134,7 +143,7 @@ public final class VortexiaCore extends JavaPlugin {
         this.citizenCardManager = new CitizenCardManager(this);
         this.securityGUI = new SecurityGUI(this);
         this.securityManager = new SecurityManager(this);
-        this.inventorySyncManager = new me.alikuxac.vortexia.core.core.service.InventorySyncManager(this);
+        this.inventorySyncManager = new InventorySyncManager(this);
         this.proxySyncService = new ProxySyncService(this);
         this.authHookManager = new AuthHookManager(this);
         this.permissionManager = new PermissionManager(this);
@@ -154,7 +163,7 @@ public final class VortexiaCore extends JavaPlugin {
         this.guideGUI = new GuideGUI(this);
         this.wailaManager = new CoreWailaManager();
         this.hudManager = new HudManager();
-        this.modDetectorService = new me.alikuxac.vortexia.core.core.service.ModDetectorService(this);
+        this.modDetectorService = new ModDetectorService(this);
 
         this.wailaTask = new WailaTask(this);
 
@@ -175,6 +184,16 @@ public final class VortexiaCore extends JavaPlugin {
             this.authHookManager.registerHook(authMeHook);
         }
 
+        // Register PlaceholderAPI expansion
+        if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            this.placeholderExpansion = new VortexiaPlaceholderExpansion(this);
+            if (this.placeholderExpansion.register()) {
+                loggerService.info("PlaceholderAPI expansion registered successfully.");
+            } else {
+                loggerService.warn("Failed to register PlaceholderAPI expansion.");
+            }
+        }
+
         loggerService.info("Server online mode: " + (identityUtil.isOnlineMode() ? "ENABLED" : "DISABLED"));
 
         VortexiaProvider.register(new CoreVortexiaAPI(this));
@@ -183,7 +202,7 @@ public final class VortexiaCore extends JavaPlugin {
                 new PlayerListener(this),
                 this);
         getServer().getPluginManager().registerEvents(
-                new me.alikuxac.vortexia.core.implementation.listener.player.SubscriptionDisconnectListener(this),
+                new SubscriptionDisconnectListener(this),
                 this);
         getServer().getPluginManager().registerEvents(
                 new CitizenCardListener(this),
@@ -262,8 +281,8 @@ public final class VortexiaCore extends JavaPlugin {
 
         // Save all online players' inventories synchronously on shutdown/restart
         if (inventorySyncManager != null && securityManager != null) {
-            java.util.List<java.util.concurrent.CompletableFuture<Void>> futures = new java.util.ArrayList<>();
-            for (org.bukkit.entity.Player onlinePlayer : getServer().getOnlinePlayers()) {
+            List<CompletableFuture<Void>> futures = new ArrayList<>();
+            for (Player onlinePlayer : getServer().getOnlinePlayers()) {
                 if (securityManager.isAuthenticated(onlinePlayer)) {
                     futures.add(inventorySyncManager.saveInventory(onlinePlayer));
                 }
@@ -271,7 +290,7 @@ public final class VortexiaCore extends JavaPlugin {
             if (!futures.isEmpty()) {
                 getLogger().info("Saving " + futures.size() + " online players' inventories before shutdown...");
                 try {
-                    java.util.concurrent.CompletableFuture.allOf(futures.toArray(new java.util.concurrent.CompletableFuture[0])).join();
+                    CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
                     getLogger().info("All online players' inventories saved successfully.");
                 } catch (Exception e) {
                     getLogger().severe("Failed to save online players' inventories on shutdown: " + e.getMessage());
@@ -310,6 +329,10 @@ public final class VortexiaCore extends JavaPlugin {
         }
         if (permissionManager != null) {
             permissionManager.unregisterPermissions();
+        }
+
+        if (placeholderExpansion != null) {
+            placeholderExpansion.unregister();
         }
 
         CommandAPI.onDisable();
@@ -415,7 +438,7 @@ public final class VortexiaCore extends JavaPlugin {
         return hudManager;
     }
 
-    public me.alikuxac.vortexia.core.core.service.ModDetectorService getModDetectorService() {
+    public ModDetectorService getModDetectorService() {
         return modDetectorService;
     }
 }

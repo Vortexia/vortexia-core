@@ -42,6 +42,9 @@ dependencies:
     AuthMe:
       load: AFTER
       required: false
+    PlaceholderAPI:
+      load: AFTER
+      required: false
 
 libraries:
   - com.zaxxer:HikariCP:5.1.0
