@@ -67,8 +67,16 @@ tasks {
         enabled = false
     }
 
+    val generateResourcePack by registering(Zip::class) {
+        group = "build"
+        description = "Packages the Vortexia Resource Pack into a distributable zip"
+        archiveFileName.set("vortexia-resourcepack.zip")
+        destinationDirectory.set(layout.buildDirectory.dir("distributions"))
+        from("src/main/resources/resourcepack")
+    }
+
     build {
-        dependsOn(shadowJar)
+        dependsOn(shadowJar, generateResourcePack)
     }
 }
 

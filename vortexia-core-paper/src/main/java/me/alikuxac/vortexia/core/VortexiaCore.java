@@ -41,6 +41,7 @@ import me.alikuxac.vortexia.core.implementation.hud.HudManager;
 import me.alikuxac.vortexia.core.implementation.waila.CoreWailaManager;
 import me.alikuxac.vortexia.core.implementation.waila.WailaTask;
 import me.alikuxac.vortexia.core.implementation.recipe.CoreCustomRecipeManager;
+import me.alikuxac.vortexia.core.implementation.pack.ResourcePackManager;
 import me.alikuxac.vortexia.core.implementation.listener.player.PlayerListener;
 import me.alikuxac.vortexia.core.implementation.listener.player.SubscriptionDisconnectListener;
 import me.alikuxac.vortexia.core.implementation.listener.security.SecurityPacketListener;
@@ -83,6 +84,7 @@ public final class VortexiaCore extends JavaPlugin {
     private HudManager hudManager;
     private ModDetectorService modDetectorService;
     private VortexiaPlaceholderExpansion placeholderExpansion;
+    private ResourcePackManager resourcePackManager;
 
     @Override
     public void onLoad() {
@@ -164,6 +166,8 @@ public final class VortexiaCore extends JavaPlugin {
         this.wailaManager = new CoreWailaManager();
         this.hudManager = new HudManager();
         this.modDetectorService = new ModDetectorService(this);
+        this.resourcePackManager = new ResourcePackManager(this);
+        this.resourcePackManager.initialize();
 
         this.wailaTask = new WailaTask(this);
 
@@ -440,6 +444,10 @@ public final class VortexiaCore extends JavaPlugin {
 
     public ModDetectorService getModDetectorService() {
         return modDetectorService;
+    }
+
+    public ResourcePackManager getResourcePackManager() {
+        return resourcePackManager;
     }
 }
 

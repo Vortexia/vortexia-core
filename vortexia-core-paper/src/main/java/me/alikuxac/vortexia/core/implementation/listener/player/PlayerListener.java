@@ -38,6 +38,11 @@ public class PlayerListener implements Listener {
       plugin.getModDetectorService().onPlayerJoin(player);
     }
 
+    // Auto-send resource pack if configured
+    if (plugin.getConfig().getBoolean("resource-pack.auto-send-on-join", false) && plugin.getResourcePackManager() != null) {
+      plugin.getResourcePackManager().sendResourcePack(player);
+    }
+
     plugin.getLoggerService().debug("Player joining: " + player.getName());
 
     // Identity check

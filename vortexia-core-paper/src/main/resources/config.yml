@@ -54,7 +54,24 @@ citizen-card:
   # Item material for the card
   material: "PAPER"
   # Custom Model Data (0 to disable, set if using resource pack)
-  custom-model-data: 0
+  custom-model-data: 10001
+
+# Resource Pack Management
+resource-pack:
+  # Enable resource pack packaging and distribution features
+  enabled: true
+  # Automatically generate plugins/VortexiaCore/pack/vortexia-resourcepack.zip on startup
+  auto-generate-zip: true
+  # Automatically send/prompt resource pack when players join
+  auto-send-on-join: false
+  # Direct download URL for the resource pack (e.g., https://example.com/vortexia-resourcepack.zip)
+  url: ""
+  # Optional SHA-1 hash (leave empty to use auto-computed hash from generated zip)
+  hash: ""
+  # Prompt message displayed to player
+  prompt: "&8[&bVortexia&8] &7Please accept the official resource pack for custom citizen cards and items."
+  # Force player to accept the pack to play (kicks on decline)
+  force: false
 
 # Storage Configuration
 storage:

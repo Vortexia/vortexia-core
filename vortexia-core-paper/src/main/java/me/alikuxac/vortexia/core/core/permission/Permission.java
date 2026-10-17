@@ -8,7 +8,8 @@ public enum Permission {
     COMMAND_CCCD_VIEW("vortexia.command.cccd.view", "View other players' profiles", PermissionCategory.COMMAND),
     COMMAND_CCCD_GET("vortexia.command.cccd.get", "Withdraw a Citizen ID card", PermissionCategory.COMMAND),
     CREATIVE_GIVE("vortexia.creative.give", "Take items from the Guide GUI", PermissionCategory.CREATIVE),
-    COMMAND_RESTORE("vortexia.command.restore", "Restore player inventory snapshots", PermissionCategory.COMMAND);
+    COMMAND_RESTORE("vortexia.command.restore", "Restore player inventory snapshots", PermissionCategory.COMMAND),
+    COMMAND_PACK("vortexia.command.pack", "Manage and dispatch resource packs", PermissionCategory.COMMAND);
 
     private final String node;
     private final String description;

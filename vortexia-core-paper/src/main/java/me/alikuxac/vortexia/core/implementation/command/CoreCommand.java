@@ -29,6 +29,7 @@ public class CoreCommand implements BaseCommand {
     this.registerSubCommand(this::getUpdateSubcommand);
     this.registerSubCommand(this::getRestoreSubcommand);
     this.registerSubCommand(this::getHudSubcommand);
+    this.registerSubCommand(this::getPackSubcommand);
   }
 
   public void registerSubCommand(SubCommand sub) {
@@ -62,6 +63,7 @@ public class CoreCommand implements BaseCommand {
           sender.sendMessage("§f/vx reload §7- Reload plugin configurations");
           sender.sendMessage("§f/vx update §7- Check for plugin updates");
           sender.sendMessage("§f/vx restore <cid> <timestamp> §7- Restore inventory snapshot");
+          sender.sendMessage("§f/vx pack [reload|send <player>] §7- Manage resource pack");
         });
   }
 
@@ -207,5 +209,47 @@ public class CoreCommand implements BaseCommand {
             });
           });
         });
+  }
+
+  private CommandAPICommand getPackSubcommand() {
+    return new CommandAPICommand("pack")
+        .withPermission(Permission.COMMAND_PACK.getNode())
+        .withSubcommand(new CommandAPICommand("reload")
+            .withPermission(Permission.COMMAND_PACK.getNode())
+            .executes((sender, args) -> {
+              VortexiaCore core = VortexiaCore.getInstance();
+              if (core.getResourcePackManager() != null) {
+                boolean success = core.getResourcePackManager().exportAndBuildZip();
+                if (success) {
+                  sender.sendMessage("§a[Vortexia] Resource pack re-packaged successfully!");
+                  sender.sendMessage("§7SHA-1: §f" + core.getResourcePackManager().getSha1Hash());
+                } else {
+                  sender.sendMessage("§c[Vortexia] Failed to package resource pack. Check console for details.");
+                }
+              } else {
+                sender.sendMessage("§c[Vortexia] ResourcePackManager is not initialized.");
+              }
+            }))
+        .withSubcommand(new CommandAPICommand("send")
+            .withPermission(Permission.COMMAND_PACK.getNode())
+            .withArguments(new dev.jorel.commandapi.arguments.EntitySelectorArgument.OnePlayer("target"))
+            .executes((sender, args) -> {
+              Player target = (Player) args.get("target");
+              if (target == null) {
+                sender.sendMessage("§c[Vortexia] Target player not found.");
+                return;
+              }
+              VortexiaCore core = VortexiaCore.getInstance();
+              if (core.getResourcePackManager() != null) {
+                boolean sent = core.getResourcePackManager().sendResourcePack(target);
+                if (sent) {
+                  sender.sendMessage("§a[Vortexia] Resource pack dispatched to " + target.getName() + ".");
+                } else {
+                  sender.sendMessage("§c[Vortexia] Failed to dispatch resource pack (check URL in config).");
+                }
+              } else {
+                sender.sendMessage("§c[Vortexia] ResourcePackManager is not initialized.");
+              }
+            }));
   }
 }
