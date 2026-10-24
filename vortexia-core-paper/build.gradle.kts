@@ -31,16 +31,6 @@ dependencies {
     implementation("com.github.retrooper:packetevents-spigot:2.12.1")
 }
 
-val backendCommonPath = if (findProject(":vortexia-core-backend-common") != null) ":vortexia-core-backend-common" else ":vortexia-core:vortexia-core-backend-common"
-val bungeePath = if (findProject(":vortexia-core-bungee") != null) ":vortexia-core-bungee" else ":vortexia-core:vortexia-core-bungee"
-val spongePath = if (findProject(":vortexia-core-sponge") != null) ":vortexia-core-sponge" else ":vortexia-core:vortexia-core-sponge"
-val velocityPath = if (findProject(":vortexia-core-velocity") != null) ":vortexia-core-velocity" else ":vortexia-core:vortexia-core-velocity"
-
-evaluationDependsOn(backendCommonPath)
-evaluationDependsOn(bungeePath)
-evaluationDependsOn(spongePath)
-evaluationDependsOn(velocityPath)
-
 tasks {
     processResources {
         val projectVersion = project.version
@@ -92,7 +82,7 @@ val rawVersion = project.version.toString()
 val refType = System.getenv("GITHUB_REF_TYPE") ?: "branch"
 val refName = System.getenv("GITHUB_REF_NAME") ?: "local"
 val runNumber = System.getenv("GITHUB_RUN_NUMBER") ?: "0"
-val versionNumber = project.findProperty("projectVersion") as? String ?: "0.3.0"
+val versionNumber = project.findProperty("projectVersion") as? String ?: "0.4.0"
 
 val isMasterRelease = refType == "tag"
 val isBetaRelease = isMasterRelease && refName.contains("beta", ignoreCase = true)
@@ -117,36 +107,32 @@ val finalVersionName = when {
 
 val mcVersionsProp = project.findProperty("mcVersions") as? String ?: "1.21"
 val parsedMcVersions = mcVersionsProp.split(",").map { it.trim() }
-val modrinthProjectIdProp = project.findProperty("modrinthProjectID") as? String ?: "VxHFxXAM"
-val hangarProjectIdProp = project.findProperty("hangarProjectID") as? String ?: "vortexia-core"
 
-val githubReleaseUrl = "https://github.com/Vortexia/vortexia-core/releases/tag/$refName"
-val modrinthTokenEnv = System.getenv("MODRINTH_TOKEN")
-
-tasks.register("modrinthPaper") {
-    doLast {
-        logger.lifecycle("Modrinth paper publish placeholder")
-    }
+modrinth {
+    token.set(System.getenv("MODRINTH_TOKEN"))
+    projectId.set(project.findProperty("modrinthProjectID") as? String ?: "VxHFxXAM")
+    versionNumber.set(rawVersion)
+    versionName.set(finalVersionName)
+    versionType.set(modrinthVersionType)
+    changelog.set("See full release notes on GitHub: https://github.com/Vortexia/vortexia-core/releases/tag/$refName")
+    uploadFile.set(tasks.shadowJar.flatMap { it.archiveFile })
+    gameVersions.set(parsedMcVersions)
+    loaders.set(listOf("paper", "spigot", "folia"))
 }
 
-tasks.register("modrinthBungee") {
-    doLast {
-        logger.lifecycle("Modrinth bungee publish placeholder")
-    }
-}
+hangarPublish {
+    publications.register("hangar") {
+        version.set(rawVersion)
+        id.set(project.findProperty("hangarProjectID") as? String ?: "vortexia-core")
+        channel.set(hangarChannel)
+        changelog.set("See full release notes on GitHub: https://github.com/Vortexia/vortexia-core/releases/tag/$refName")
+        apiKey.set(System.getenv("HANGAR_API_TOKEN"))
 
-tasks.register("modrinthSponge") {
-    doLast {
-        logger.lifecycle("Modrinth sponge publish placeholder")
+        platforms {
+            register(io.papermc.hangarpublishplugin.model.Platforms.PAPER) {
+                jar.set(tasks.shadowJar.flatMap { it.archiveFile })
+                platformVersions.set(parsedMcVersions)
+            }
+        }
     }
-}
-
-tasks.register("modrinthVelocity") {
-    doLast {
-        logger.lifecycle("Modrinth velocity publish placeholder")
-    }
-}
-
-tasks.named("modrinth") {
-    dependsOn("modrinthPaper", "modrinthBungee", "modrinthSponge", "modrinthVelocity")
 }

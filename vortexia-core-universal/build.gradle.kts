@@ -47,7 +47,7 @@ val rawVersion = project.version.toString()
 val refType = System.getenv("GITHUB_REF_TYPE") ?: "branch"
 val refName = System.getenv("GITHUB_REF_NAME") ?: "local"
 val runNumber = System.getenv("GITHUB_RUN_NUMBER") ?: "0"
-val projectVerStr = project.findProperty("projectVersion") as? String ?: "0.3.0"
+val projectVerStr = project.findProperty("projectVersion") as? String ?: "0.4.0"
 
 val isMasterRelease = refType == "tag"
 val isBetaRelease = isMasterRelease && refName.contains("beta", ignoreCase = true)
