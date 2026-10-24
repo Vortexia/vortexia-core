@@ -185,7 +185,7 @@ public class StorageManager implements me.alikuxac.vortexia.api.storage.StorageM
                 oldIdentity.orElse(null),
                 newIdentity.get(),
                 updateType);
-            Bukkit.getScheduler().runTask(plugin, () -> {
+            plugin.getSchedulerService().runGlobal(() -> {
               Bukkit.getPluginManager().callEvent(event);
             });
           }
@@ -209,7 +209,7 @@ public class StorageManager implements me.alikuxac.vortexia.api.storage.StorageM
                   premiumUuid,
                   old.getName(),
                   old);
-              Bukkit.getScheduler().runTask(plugin, () -> {
+              plugin.getSchedulerService().runGlobal(() -> {
                 Bukkit.getPluginManager().callEvent(linkEvent);
               });
             }
@@ -224,7 +224,7 @@ public class StorageManager implements me.alikuxac.vortexia.api.storage.StorageM
                     old,
                     newIdentity.get(),
                     updateType);
-                Bukkit.getScheduler().runTask(plugin, () -> {
+                plugin.getSchedulerService().runGlobal(() -> {
                   Bukkit.getPluginManager().callEvent(updateEvent);
                 });
               }
@@ -270,7 +270,7 @@ public class StorageManager implements me.alikuxac.vortexia.api.storage.StorageM
 
   @Override
   public CompletableFuture<Void> executeUpdate(String sql, Object... params) {
-    return CompletableFuture.runAsync(() -> {
+    return storage.getExecutor().run(() -> {
       try (java.sql.Connection conn = getConnection();
            java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
         for (int i = 0; i < params.length; i++) {
@@ -285,7 +285,7 @@ public class StorageManager implements me.alikuxac.vortexia.api.storage.StorageM
 
   @Override
   public <T> CompletableFuture<T> executeQuery(String sql, me.alikuxac.vortexia.api.storage.SQLFunction<java.sql.ResultSet, T> mapper, Object... params) {
-    return CompletableFuture.supplyAsync(() -> {
+    return storage.getExecutor().supply(() -> {
       try (java.sql.Connection conn = getConnection();
            java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
         for (int i = 0; i < params.length; i++) {

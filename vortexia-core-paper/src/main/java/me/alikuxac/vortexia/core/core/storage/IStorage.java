@@ -50,4 +50,6 @@ public interface IStorage {
   java.sql.Connection getConnection() throws java.sql.SQLException;
 
   String getDatabaseType();
+
+  me.alikuxac.vortexia.core.core.storage.util.StorageExecutor getExecutor();
 }

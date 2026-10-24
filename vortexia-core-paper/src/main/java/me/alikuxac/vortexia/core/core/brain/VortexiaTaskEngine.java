@@ -4,8 +4,6 @@ package me.alikuxac.vortexia.core.core.brain;
 import me.alikuxac.vortexia.core.VortexiaCore;
 import me.alikuxac.vortexia.api.scheduler.TaskEngine;
 
-import org.bukkit.Bukkit;
-import org.bukkit.scheduler.BukkitTask;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -16,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class VortexiaTaskEngine implements TaskEngine {
 
     private final VortexiaCore plugin;
-    private final Map<String, BukkitTask> recurringTasks = new ConcurrentHashMap<>();
+    private final Map<String, Runnable> recurringTasks = new ConcurrentHashMap<>();
     private final Map<String, Runnable> registeredProcessors = new ConcurrentHashMap<>();
 
     public VortexiaTaskEngine(VortexiaCore plugin) {
@@ -30,14 +28,15 @@ public class VortexiaTaskEngine implements TaskEngine {
      * @param period Period in ticks
      */
     public void registerRecurringProcessor(String id, Runnable processor, long period) {
-        if (recurringTasks.containsKey(id)) {
-            recurringTasks.get(id).cancel();
+        Runnable existing = recurringTasks.remove(id);
+        if (existing != null) {
+            existing.run();
         }
 
-        BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, processor, period, period);
-        recurringTasks.put(id, task);
+        Runnable canceller = plugin.getSchedulerService().runRepeating(processor, period);
+        recurringTasks.put(id, canceller);
         registeredProcessors.put(id, processor);
-        
+
         plugin.getLogger().info("Brain Engine: Registered recurring processor [" + id + "] every " + period + " ticks.");
     }
 
@@ -46,23 +45,23 @@ public class VortexiaTaskEngine implements TaskEngine {
      * @param task The task to run
      */
     public void runAsync(Runnable task) {
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, task);
+        plugin.getSchedulerService().runAsync(task);
     }
 
     /**
      * Stops all registered tasks.
      */
     public void shutdown() {
-        recurringTasks.values().forEach(BukkitTask::cancel);
+        recurringTasks.values().forEach(Runnable::run);
         recurringTasks.clear();
         registeredProcessors.clear();
         plugin.getLogger().info("Brain Engine: All processors shut down.");
     }
 
     public void unregisterProcessor(String id) {
-        BukkitTask task = recurringTasks.remove(id);
-        if (task != null) {
-            task.cancel();
+        Runnable canceller = recurringTasks.remove(id);
+        if (canceller != null) {
+            canceller.run();
             registeredProcessors.remove(id);
             plugin.getLogger().info("Brain Engine: Unregistered processor [" + id + "]");
         }

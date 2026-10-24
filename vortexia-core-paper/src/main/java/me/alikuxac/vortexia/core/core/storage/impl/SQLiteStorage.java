@@ -21,6 +21,7 @@ import me.alikuxac.vortexia.core.core.storage.IStorage;
 import me.alikuxac.vortexia.core.core.storage.StorageConfig;
 import me.alikuxac.vortexia.core.core.storage.StorageException;
 import me.alikuxac.vortexia.core.core.storage.model.InventorySnapshot;
+import me.alikuxac.vortexia.core.core.storage.util.StorageExecutor;
 import me.alikuxac.vortexia.api.model.Identity;
 
 public class SQLiteStorage implements IStorage {
@@ -156,6 +157,7 @@ public class SQLiteStorage implements IStorage {
   private final VortexiaCore plugin;
   private final StorageConfig config;
   private HikariDataSource dataSource;
+  private StorageExecutor executor;
 
   public SQLiteStorage(VortexiaCore plugin, StorageConfig config) {
     this.plugin = plugin;
@@ -164,6 +166,8 @@ public class SQLiteStorage implements IStorage {
 
   @Override
   public void initialize() throws StorageException {
+    // SQLite uses a single connection; one storage thread avoids contention on the 1-connection pool
+    this.executor = new StorageExecutor(1);
     try {
       File dataFolder = plugin.getDataFolder();
       if (!dataFolder.exists()) {
@@ -215,11 +219,14 @@ public class SQLiteStorage implements IStorage {
       dataSource.close();
       plugin.getLoggerService().debug("SQLite storage connection pool closed");
     }
+    if (executor != null) {
+      executor.shutdown();
+    }
   }
 
   @Override
   public CompletableFuture<Void> saveIdentity(UUID uuid, UUID premiumUuid, String citizenId, String name, String pin) {
-    return CompletableFuture.runAsync(() -> {
+    return executor.run(() -> {
       try (Connection conn = dataSource.getConnection();
           PreparedStatement stmt = conn.prepareStatement(INSERT_IDENTITY)) {
 
@@ -241,7 +248,7 @@ public class SQLiteStorage implements IStorage {
 
   @Override
   public CompletableFuture<Optional<Identity>> getIdentity(UUID uuid) {
-    return CompletableFuture.supplyAsync(() -> {
+    return executor.supply(() -> {
       try (Connection conn = dataSource.getConnection();
           PreparedStatement stmt = conn.prepareStatement(SELECT_BY_UUID)) {
 
@@ -261,7 +268,7 @@ public class SQLiteStorage implements IStorage {
 
   @Override
   public CompletableFuture<Optional<Identity>> getIdentityByName(String name) {
-    return CompletableFuture.supplyAsync(() -> {
+    return executor.supply(() -> {
       try (Connection conn = dataSource.getConnection();
           PreparedStatement stmt = conn.prepareStatement(SELECT_BY_NAME)) {
 
@@ -281,7 +288,7 @@ public class SQLiteStorage implements IStorage {
 
   @Override
   public CompletableFuture<Boolean> updatePin(UUID uuid, String newPin) {
-    return CompletableFuture.supplyAsync(() -> {
+    return executor.supply(() -> {
       try (Connection conn = dataSource.getConnection();
           PreparedStatement stmt = conn.prepareStatement(UPDATE_PIN)) {
 
@@ -299,7 +306,7 @@ public class SQLiteStorage implements IStorage {
 
   @Override
   public CompletableFuture<Optional<Identity>> getIdentityByPremiumUuid(UUID premiumUuid) {
-    return CompletableFuture.supplyAsync(() -> {
+    return executor.supply(() -> {
       if (premiumUuid == null) {
         return Optional.empty();
       }
@@ -322,7 +329,7 @@ public class SQLiteStorage implements IStorage {
 
   @Override
   public CompletableFuture<Optional<Identity>> getIdentityByCitizenId(String citizenId) {
-    return CompletableFuture.supplyAsync(() -> {
+    return executor.supply(() -> {
       if (citizenId == null) {
         return Optional.empty();
       }
@@ -345,7 +352,7 @@ public class SQLiteStorage implements IStorage {
 
   @Override
   public CompletableFuture<Boolean> updatePremiumUuid(UUID uuid, UUID premiumUuid) {
-    return CompletableFuture.supplyAsync(() -> {
+    return executor.supply(() -> {
       try (Connection conn = dataSource.getConnection();
           PreparedStatement stmt = conn.prepareStatement(UPDATE_PREMIUM_UUID)) {
 
@@ -368,7 +375,7 @@ public class SQLiteStorage implements IStorage {
 
   @Override
   public CompletableFuture<Optional<String>> getMetadata(UUID uuid, String key) {
-    return CompletableFuture.supplyAsync(() -> {
+    return executor.supply(() -> {
       try (Connection conn = dataSource.getConnection();
           PreparedStatement stmt = conn.prepareStatement(SELECT_METADATA)) {
 
@@ -389,7 +396,7 @@ public class SQLiteStorage implements IStorage {
 
   @Override
   public CompletableFuture<Void> saveMetadata(UUID uuid, String key, String value) {
-    return CompletableFuture.runAsync(() -> {
+    return executor.run(() -> {
       try (Connection conn = dataSource.getConnection();
           PreparedStatement stmt = conn.prepareStatement(INSERT_METADATA)) {
 
@@ -406,7 +413,7 @@ public class SQLiteStorage implements IStorage {
 
   @Override
   public CompletableFuture<Void> deleteMetadata(UUID uuid, String key) {
-    return CompletableFuture.runAsync(() -> {
+    return executor.run(() -> {
       try (Connection conn = dataSource.getConnection();
           PreparedStatement stmt = conn.prepareStatement(DELETE_METADATA)) {
 
@@ -435,7 +442,7 @@ public class SQLiteStorage implements IStorage {
 
   @Override
   public CompletableFuture<Void> saveInventorySnapshot(String citizenId, String inventoryData, String enderChestData) {
-    return CompletableFuture.runAsync(() -> {
+    return executor.run(() -> {
       try (Connection conn = dataSource.getConnection();
           PreparedStatement stmt = conn.prepareStatement(INSERT_INVENTORY_SNAPSHOT)) {
         stmt.setString(1, citizenId);
@@ -451,7 +458,7 @@ public class SQLiteStorage implements IStorage {
 
   @Override
   public CompletableFuture<Optional<InventorySnapshot>> getLatestInventorySnapshot(String citizenId) {
-    return CompletableFuture.supplyAsync(() -> {
+    return executor.supply(() -> {
       try (Connection conn = dataSource.getConnection();
           PreparedStatement stmt = conn.prepareStatement(SELECT_LATEST_INVENTORY)) {
         stmt.setString(1, citizenId);
@@ -474,7 +481,7 @@ public class SQLiteStorage implements IStorage {
 
   @Override
   public CompletableFuture<List<InventorySnapshot>> getInventorySnapshots(String citizenId, int limit) {
-    return CompletableFuture.supplyAsync(() -> {
+    return executor.supply(() -> {
       List<InventorySnapshot> snapshots = new ArrayList<>();
       try (Connection conn = dataSource.getConnection();
           PreparedStatement stmt = conn.prepareStatement(SELECT_ALL_INVENTORY)) {
@@ -499,7 +506,7 @@ public class SQLiteStorage implements IStorage {
 
   @Override
   public CompletableFuture<Optional<InventorySnapshot>> getInventorySnapshotByTimestamp(String citizenId, long timestamp) {
-    return CompletableFuture.supplyAsync(() -> {
+    return executor.supply(() -> {
       try (Connection conn = dataSource.getConnection();
           PreparedStatement stmt = conn.prepareStatement(SELECT_INVENTORY_BY_TIMESTAMP)) {
         stmt.setString(1, citizenId);
@@ -523,7 +530,7 @@ public class SQLiteStorage implements IStorage {
 
   @Override
   public CompletableFuture<Void> cleanOldInventorySnapshots(String citizenId, int keepLimit) {
-    return CompletableFuture.runAsync(() -> {
+    return executor.run(() -> {
       try (Connection conn = dataSource.getConnection();
           PreparedStatement stmt = conn.prepareStatement(DELETE_OLD_INVENTORIES)) {
         stmt.setString(1, citizenId);
@@ -547,5 +554,10 @@ public class SQLiteStorage implements IStorage {
   @Override
   public String getDatabaseType() {
     return "SQLITE";
+  }
+
+  @Override
+  public StorageExecutor getExecutor() {
+    return executor;
   }
 }

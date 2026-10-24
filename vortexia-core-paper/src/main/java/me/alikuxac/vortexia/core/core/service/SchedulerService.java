@@ -82,4 +82,16 @@ public class SchedulerService {
             Bukkit.getScheduler().runTaskAsynchronously(plugin, runnable);
         }
     }
+
+    /**
+     * Run a task repeatedly on the global region. Returns a canceller.
+     */
+    public Runnable runRepeating(Runnable runnable, long periodTicks) {
+        if (isFolia) {
+            var task = Bukkit.getGlobalRegionScheduler().runAtFixedRate(plugin, t -> runnable.run(), periodTicks, periodTicks);
+            return task::cancel;
+        }
+        var task = Bukkit.getScheduler().runTaskTimer(plugin, runnable, periodTicks, periodTicks);
+        return task::cancel;
+    }
 }

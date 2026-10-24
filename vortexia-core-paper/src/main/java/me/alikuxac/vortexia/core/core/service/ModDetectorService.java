@@ -50,7 +50,7 @@ public class ModDetectorService {
      */
     public void onPlayerJoin(Player player) {
         moddedPlayers.put(player.getUniqueId(), false);
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+        plugin.getSchedulerService().runEntityDelayed(player, () -> {
             if (player.isOnline() && !isModded(player)) {
                 plugin.getLoggerService().info("ℹ️ Player " + player.getName() + " connected as [Vanilla Client] (Using Vanilla HUD Fallback).");
             }

@@ -45,7 +45,7 @@ public class CitizenCardListener implements Listener {
       
       plugin.getStorageManager().getIdentityByCitizenId(cid).thenAccept(optIdentity -> {
         if (optIdentity.isPresent()) {
-          org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+          plugin.getSchedulerService().runEntity(event.getPlayer(), () -> {
             new ProfileGUI(plugin).open(event.getPlayer(), optIdentity.get());
           });
         } else {
