@@ -251,17 +251,19 @@ public class CoreGridManager implements GridManager {
         // Apply solver to all active grids of this type retrospectively
         List<Grid> list = activeGrids.get(networkType);
         if (list != null) {
+            List<Grid> rebuilt = new CopyOnWriteArrayList<>();
             for (Grid g : list) {
                 if (g instanceof CoreGrid cg) {
-                    // Update solver
-                    activeGrids.get(networkType).remove(g);
                     CoreGrid newG = new CoreGrid(cg.getId(), cg.getNetworkType(), solver);
                     for (GridNode node : cg.getNodes()) {
                         newG.addNode(node);
                     }
-                    activeGrids.get(networkType).add(newG);
+                    rebuilt.add(newG);
+                } else {
+                    rebuilt.add(g);
                 }
             }
+            activeGrids.put(networkType, rebuilt);
         }
     }
 }
