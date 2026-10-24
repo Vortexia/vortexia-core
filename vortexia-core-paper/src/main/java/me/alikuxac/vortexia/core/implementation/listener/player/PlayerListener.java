@@ -58,7 +58,7 @@ public class PlayerListener implements Listener {
             checkAndRequestAuth(player);
           } else {
             // New player logic
-            player.sendMessage(Component.text("Welcome to Vortexia! Please set up a security PIN using /pin setup <4-digit-pin>", NamedTextColor.YELLOW));
+            player.sendMessage(Component.text("Welcome to Vortexia! Please set up a security PIN using /pin setup", NamedTextColor.YELLOW));
             plugin.getLoggerService().debug("No identity found for " + player.getName() + " (new player will be created on save)");
           }
         });
@@ -104,9 +104,9 @@ public class PlayerListener implements Listener {
       }
 
       if (identity.getPin() == null || identity.getPin().isEmpty()) {
-        player.sendMessage(Component.text("Please set up your security PIN using /pin setup <new_pin>", NamedTextColor.YELLOW));
+        player.sendMessage(Component.text("Please set up your security PIN using /pin setup", NamedTextColor.YELLOW));
       } else {
-        player.sendMessage(Component.text("This account is protected. Please verify your PIN using /pin verify <your_pin>", NamedTextColor.YELLOW));
+        player.sendMessage(Component.text("This account is protected. Please verify your PIN using /pin verify", NamedTextColor.YELLOW));
       }
     });
   }

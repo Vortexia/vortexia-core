@@ -3,6 +3,7 @@ package me.alikuxac.vortexia.core.implementation.gui;
 
 import me.alikuxac.vortexia.core.VortexiaCore;
 import me.alikuxac.vortexia.core.utils.PINUtil;
+import me.alikuxac.vortexia.api.model.Identity;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -155,10 +156,17 @@ public class SecurityGUI implements Listener {
 
         UUID uuid = player.getUniqueId();
 
+        long lockLeft = plugin.getSecurityManager().pinLockoutSecondsLeft(player);
+        if (lockLeft > 0) {
+            player.sendMessage(Component.text("Too many failed attempts. Try again in " + lockLeft + "s.", NamedTextColor.RED));
+            return;
+        }
+
         switch (mode) {
             case SETUP -> {
                 String hashed = PINUtil.hash(pin);
                 plugin.getIdentityMigrationHelper().createOrUpdateIdentity(player, hashed).thenRun(() -> {
+                    plugin.getSecurityManager().clearPinFailures(player);
                     plugin.getSecurityManager().authenticate(player);
                     player.sendMessage(Component.text("PIN set successfully! You are now authenticated.", NamedTextColor.GREEN));
                     player.closeInventory();
@@ -167,20 +175,42 @@ public class SecurityGUI implements Listener {
                 });
             }
             case VERIFY -> {
-                plugin.getStorageManager().getIdentity(uuid).thenAccept(optIdentity -> {
+                plugin.getStorageManager().getIdentity(uuid).thenCompose(optIdentity -> {
                     if (optIdentity.isPresent()) {
-                        String storedHash = optIdentity.get().getPin();
-                        if (PINUtil.verify(pin, storedHash)) {
+                        return java.util.concurrent.CompletableFuture.completedFuture(optIdentity);
+                    }
+                    // ponytail: name fallback only for genuine migration (gated inside findOrMigrateIdentity)
+                    return plugin.getIdentityMigrationHelper().findOrMigrateIdentity(player);
+                }).thenAccept(optIdentity -> {
+                    if (optIdentity.isEmpty()) {
+                        return;
+                    }
+                    Identity identity = optIdentity.get();
+                    String storedHash = identity.getPin();
+                    if (PINUtil.verify(pin, storedHash)) {
+                        if (!identity.getUuid().equals(uuid)) {
+                            plugin.getIdentityMigrationHelper().completeMigration(player, identity).thenAccept(success -> {
+                                if (success) {
+                                    plugin.getSecurityManager().clearPinFailures(player);
+                                    plugin.getSecurityManager().authenticate(player);
+                                    player.sendMessage(Component.text("Identity migrated and authenticated successfully!", NamedTextColor.GREEN));
+                                    player.closeInventory();
+                                    currentInput.remove(uuid);
+                                    playerMode.remove(uuid);
+                                } else {
+                                    player.sendMessage(Component.text("Failed to complete migration. Please contact admin.", NamedTextColor.RED));
+                                }
+                            });
+                        } else {
+                            plugin.getSecurityManager().clearPinFailures(player);
                             plugin.getSecurityManager().authenticate(player);
                             player.sendMessage(Component.text("Authentication successful!", NamedTextColor.GREEN));
                             player.closeInventory();
                             currentInput.remove(uuid);
                             playerMode.remove(uuid);
-                        } else {
-                            player.sendMessage(Component.text("Incorrect PIN! Access denied.", NamedTextColor.RED));
-                            currentInput.get(uuid).setLength(0);
-                            plugin.getSchedulerService().runEntity(player, () -> refreshItems(player, player.getOpenInventory().getTopInventory(), mode));
                         }
+                    } else {
+                        reportFailure(player, uuid, mode);
                     }
                 });
             }
@@ -192,9 +222,7 @@ public class SecurityGUI implements Listener {
                             // Correct! Now open the Setup for new PIN
                             plugin.getSchedulerService().runEntity(player, () -> open(player, Mode.CHANGE_NEW));
                         } else {
-                            player.sendMessage(Component.text("Incorrect current PIN!", NamedTextColor.RED));
-                            currentInput.get(uuid).setLength(0);
-                            plugin.getSchedulerService().runEntity(player, () -> refreshItems(player, player.getOpenInventory().getTopInventory(), mode));
+                            reportFailure(player, uuid, mode);
                         }
                     }
                 });
@@ -202,6 +230,7 @@ public class SecurityGUI implements Listener {
             case CHANGE_NEW -> {
                 String hashed = PINUtil.hash(pin);
                 plugin.getIdentityMigrationHelper().createOrUpdateIdentity(player, hashed).thenRun(() -> {
+                    plugin.getSecurityManager().clearPinFailures(player);
                     player.sendMessage(Component.text("PIN changed successfully!", NamedTextColor.GREEN));
                     player.closeInventory();
                     currentInput.remove(uuid);
@@ -209,6 +238,21 @@ public class SecurityGUI implements Listener {
                 });
             }
         }
+    }
+
+    private void reportFailure(Player player, UUID uuid, Mode mode) {
+        if (plugin.getSecurityManager().recordPinFailure(player)) {
+            long seconds = plugin.getConfig().getInt("security.pin.lockout-seconds", 300);
+            player.sendMessage(Component.text("Incorrect PIN! Account locked for " + seconds + "s.", NamedTextColor.RED));
+            player.closeInventory();
+            currentInput.remove(uuid);
+            playerMode.remove(uuid);
+            return;
+        }
+        player.sendMessage(Component.text("Incorrect PIN! Access denied.", NamedTextColor.RED));
+        StringBuilder sb = currentInput.get(uuid);
+        if (sb != null) sb.setLength(0);
+        plugin.getSchedulerService().runEntity(player, () -> refreshItems(player, player.getOpenInventory().getTopInventory(), mode));
     }
 
     private ItemStack createItem(Material material, String name) {

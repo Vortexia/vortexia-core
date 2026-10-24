@@ -103,7 +103,7 @@ public class AuthRestrictListener implements Listener {
   private void sendAuthReminder(Player player) {
     Title title = Title.title(
         Component.text("PIN VERIFICATION REQUIRED", NamedTextColor.RED),
-        Component.text("Please use /pin verify <pin> to continue", NamedTextColor.GRAY),
+        Component.text("Please use /pin verify to continue", NamedTextColor.GRAY),
         Title.Times.times(Duration.ZERO, Duration.ofSeconds(2), Duration.ofSeconds(1)));
     player.showTitle(title);
   }

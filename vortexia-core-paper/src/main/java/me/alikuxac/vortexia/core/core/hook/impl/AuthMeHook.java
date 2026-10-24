@@ -51,9 +51,9 @@ public class AuthMeHook implements IAuthHook, Listener {
         if (!plugin.getSecurityManager().isAuthenticated(player)) {
             plugin.getStorageManager().getCache().getByUuid(player.getUniqueId()).ifPresent(identity -> {
                 if (identity.getPin() == null || identity.getPin().isEmpty()) {
-                    player.sendMessage(Component.text("AuthMe login successful! Now please set up your security PIN using /pin setup <new_pin>", NamedTextColor.YELLOW));
+                    player.sendMessage(Component.text("AuthMe login successful! Now please set up your security PIN using /pin setup", NamedTextColor.YELLOW));
                 } else {
-                    player.sendMessage(Component.text("AuthMe login successful! Now please verify your PIN using /pin verify <your_pin>", NamedTextColor.YELLOW));
+                    player.sendMessage(Component.text("AuthMe login successful! Now please verify your PIN using /pin verify", NamedTextColor.YELLOW));
                 }
             });
         }
