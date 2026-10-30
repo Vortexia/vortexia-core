@@ -179,7 +179,6 @@ public class SecurityGUI implements Listener {
                     if (optIdentity.isPresent()) {
                         return java.util.concurrent.CompletableFuture.completedFuture(optIdentity);
                     }
-                    // ponytail: name fallback only for genuine migration (gated inside findOrMigrateIdentity)
                     return plugin.getIdentityMigrationHelper().findOrMigrateIdentity(player);
                 }).thenAccept(optIdentity -> {
                     if (optIdentity.isEmpty()) {

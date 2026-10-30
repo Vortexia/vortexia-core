@@ -39,7 +39,6 @@ public class PINCommand implements BaseCommand {
         .register();
   }
 
-  // ponytail: PIN never travels as a command argument (avoids plaintext in logs); GUI number-pad only
   private CommandAPICommand changeSubcommand() {
     return new CommandAPICommand("change")
         .executesPlayer((player, args) -> {

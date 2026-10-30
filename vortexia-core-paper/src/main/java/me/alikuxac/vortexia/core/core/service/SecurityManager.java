@@ -10,7 +10,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class SecurityManager {
 
@@ -19,46 +18,25 @@ public class SecurityManager {
   private final Set<UUID> authenticatedPlayers = new HashSet<>();
   // Map of UUIDs to their initial login location
   private final Map<UUID, Location> loginLocations = new HashMap<>();
-  // ponytail: PIN lockout is in-memory; restart resets attempts (acceptable, PIN attempts are per-session)
-  private final Map<UUID, Integer> pinFailures = new ConcurrentHashMap<>();
-  private final Map<UUID, Long> pinLockedUntil = new ConcurrentHashMap<>();
+  private final PinAttemptTracker pinAttempts;
 
   public SecurityManager(VortexiaCore plugin) {
     this.plugin = plugin;
+    this.pinAttempts = new PinAttemptTracker(
+        plugin.getConfig().getInt("security.pin.max-attempts", 3),
+        plugin.getConfig().getInt("security.pin.lockout-seconds", 300));
   }
 
-  /**
-   * Records a failed PIN attempt. Returns true if the player is now locked out.
-   */
   public boolean recordPinFailure(Player player) {
-    int maxAttempts = plugin.getConfig().getInt("security.pin.max-attempts", 3);
-    int failures = pinFailures.merge(player.getUniqueId(), 1, Integer::sum);
-    if (failures >= maxAttempts) {
-      int lockoutSeconds = plugin.getConfig().getInt("security.pin.lockout-seconds", 300);
-      pinLockedUntil.put(player.getUniqueId(), System.currentTimeMillis() + lockoutSeconds * 1000L);
-      pinFailures.remove(player.getUniqueId());
-      return true;
-    }
-    return false;
+    return pinAttempts.recordFailure(player.getUniqueId());
   }
 
-  /**
-   * Remaining lockout seconds, or 0 if not locked.
-   */
   public long pinLockoutSecondsLeft(Player player) {
-    Long until = pinLockedUntil.get(player.getUniqueId());
-    if (until == null) return 0;
-    long left = until - System.currentTimeMillis();
-    if (left <= 0) {
-      pinLockedUntil.remove(player.getUniqueId());
-      return 0;
-    }
-    return left / 1000 + 1;
+    return pinAttempts.lockoutSecondsLeft(player.getUniqueId());
   }
 
   public void clearPinFailures(Player player) {
-    pinFailures.remove(player.getUniqueId());
-    pinLockedUntil.remove(player.getUniqueId());
+    pinAttempts.clear(player.getUniqueId());
   }
 
   public void markAsUnauthenticated(Player player) {
@@ -107,7 +85,6 @@ public class SecurityManager {
   public void clearAll() {
     authenticatedPlayers.clear();
     loginLocations.clear();
-    pinFailures.clear();
-    pinLockedUntil.clear();
+    pinAttempts.clearAll();
   }
 }

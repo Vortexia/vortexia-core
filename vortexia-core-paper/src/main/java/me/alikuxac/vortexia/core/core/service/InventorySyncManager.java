@@ -152,7 +152,7 @@ public class InventorySyncManager {
   public void waitForActiveSaves() {
     if (activeSaves.isEmpty()) return;
     try {
-      CompletableFuture.allOf(activeSaves.toArray(new CompletableFuture[0])).join();
+      CompletableFuture.allOf(activeSaves.toArray(new CompletableFuture<?>[0])).join();
     } catch (Exception e) {
       plugin.getLoggerService().error("Error waiting for active saves: " + e.getMessage());
     }

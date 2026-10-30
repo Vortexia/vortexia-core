@@ -8,11 +8,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
-/**
- * Dedicated pool for blocking JDBC work. Keeps DB calls off the common ForkJoinPool.
- * Instance-scoped so each plugin lifecycle gets a fresh pool (see StorageManager shutdown/initialize).
- * ponytail: sized to the storage backend's connection pool; grow if contention shows up.
- */
 public final class StorageExecutor {
 
     private final ExecutorService pool;
