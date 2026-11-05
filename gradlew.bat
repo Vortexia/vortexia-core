@@ -36,6 +36,40 @@ for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
 @rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
 set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
 
+@rem Resolve Java 21 per project standard when system default is missing or incompatible (e.g. Java 25)
+if defined JAVA_HOME if exist "%JAVA_HOME%\bin\java.exe" (
+    "%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /i "21." >nul
+    if not errorlevel 1 goto javaConfigured
+)
+
+if defined JAVA21_HOME if exist "%JAVA21_HOME%\bin\java.exe" (
+    set "JAVA_HOME=%JAVA21_HOME%"
+    goto javaConfigured
+)
+
+if defined JDK21_HOME if exist "%JDK21_HOME%\bin\java.exe" (
+    set "JAVA_HOME=%JDK21_HOME%"
+    goto javaConfigured
+)
+
+for /d %%D in (
+    "C:\Program Files\Eclipse Adoptium\jdk-21*"
+    "C:\Program Files\Java\jdk-21*"
+    "C:\Program Files\Microsoft\jdk-21*"
+    "C:\Program Files\Amazon Corretto\jdk21*"
+    "C:\Program Files\Zulu\zulu-21*"
+    "C:\Program Files\BellSoft\LibericaJDK-21*"
+    "%USERPROFILE%\.jdks\*21*"
+    "%LOCALAPPDATA%\Programs\Eclipse Adoptium\jdk-21*"
+) do (
+    if exist "%%~D\bin\java.exe" (
+        set "JAVA_HOME=%%~D"
+        goto javaConfigured
+    )
+)
+
+:javaConfigured
+
 @rem Find java.exe
 if defined JAVA_HOME goto findJavaFromJavaHome
 

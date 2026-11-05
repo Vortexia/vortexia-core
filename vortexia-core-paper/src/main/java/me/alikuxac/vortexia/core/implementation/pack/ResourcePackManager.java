@@ -3,6 +3,7 @@ package me.alikuxac.vortexia.core.implementation.pack;
 
 import me.alikuxac.vortexia.core.VortexiaCore;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.entity.Player;
 
@@ -13,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
@@ -23,6 +25,7 @@ public class ResourcePackManager {
     private final VortexiaCore plugin;
     private final File packFolder;
     private final File zipFile;
+    private final Set<UUID> loadedPackPlayers = ConcurrentHashMap.newKeySet();
     private String sha1Hash = "";
     private byte[] sha1HashBytes = new byte[0];
 
@@ -67,7 +70,7 @@ public class ResourcePackManager {
             zos.flush();
 
             computeChecksum();
-            plugin.getLoggerService().info("Resource pack generated successfully. Size: " + (zipFile.length() / 1024) + " KB | SHA-1: " + sha1Hash);
+            plugin.getLoggerService().info("Resource pack generated successfully: " + zipFile.getAbsolutePath() + " (" + (zipFile.length() / 1024) + " KB | SHA-1: " + sha1Hash + ")");
             return true;
         } catch (Exception e) {
             plugin.getLoggerService().warn("Error while packaging resource pack: " + e.getMessage());
@@ -78,9 +81,17 @@ public class ResourcePackManager {
 
     private boolean tryPackageFromJar(ZipOutputStream zos, Set<String> addedEntries) {
         try {
-            String path = plugin.getClass().getProtectionDomain().getCodeSource().getLocation().getPath();
-            String decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8);
-            File jarFile = new File(decodedPath);
+            File jarFile;
+            try {
+                jarFile = new File(plugin.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
+            } catch (Exception ex) {
+                String path = plugin.getClass().getProtectionDomain().getCodeSource().getLocation().getPath();
+                String decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8);
+                if (System.getProperty("os.name", "").toLowerCase().contains("win") && decodedPath.startsWith("/") && decodedPath.length() > 2 && decodedPath.charAt(2) == ':') {
+                    decodedPath = decodedPath.substring(1);
+                }
+                jarFile = new File(decodedPath);
+            }
 
             if (!jarFile.exists() || !jarFile.isFile()) {
                 return false;
@@ -173,35 +184,68 @@ public class ResourcePackManager {
         }
     }
 
+    public boolean hasResourcePack(UUID uuid) {
+        return uuid != null && loadedPackPlayers.contains(uuid);
+    }
+
+    public void setPlayerHasResourcePack(UUID uuid, boolean loaded) {
+        if (uuid == null) return;
+        if (loaded) {
+            loadedPackPlayers.add(uuid);
+        } else {
+            loadedPackPlayers.remove(uuid);
+        }
+    }
+
+    public void clearPlayerSession(UUID uuid) {
+        if (uuid != null) {
+            loadedPackPlayers.remove(uuid);
+        }
+    }
+
     public boolean sendResourcePack(Player player) {
         if (player == null || !player.isOnline()) {
             return false;
         }
 
+        if (!plugin.getConfig().getBoolean("resource-pack.enabled", true)) {
+            return false;
+        }
+
         String url = plugin.getConfig().getString("resource-pack.url", "").trim();
         if (url.isEmpty()) {
-            plugin.getLoggerService().warn("Cannot send resource pack to player " + player.getName() + ": 'resource-pack.url' is not configured.");
+            plugin.getLoggerService().warn("Cannot send resource pack to player " + player.getName() + ": 'resource-pack.url' is not configured in config.yml.");
             return false;
         }
 
         String configHash = plugin.getConfig().getString("resource-pack.hash", "").trim();
         byte[] hashBytes = sha1HashBytes;
         if (!configHash.isEmpty()) {
-            try {
-                hashBytes = hexStringToByteArray(configHash);
-            } catch (Exception e) {
+            byte[] parsed = hexStringToByteArray(configHash);
+            if (parsed.length > 0) {
+                hashBytes = parsed;
+            } else {
                 plugin.getLoggerService().warn("Invalid configured SHA-1 hash format: " + configHash);
             }
         }
 
-        boolean force = plugin.getConfig().getBoolean("resource-pack.force", false);
-        String promptText = plugin.getConfig().getString("resource-pack.prompt", "§bVortexia§7: Please download the resource pack.");
-        Component prompt = LegacyComponentSerializer.legacyAmpersand().deserialize(promptText);
+        boolean required = plugin.getConfig().getBoolean("resource-pack.required", plugin.getConfig().getBoolean("resource-pack.force", false));
+        String promptText = plugin.getConfig().getString("resource-pack.prompt-message", plugin.getConfig().getString("resource-pack.prompt", ""));
+
+        Component promptComponent = null;
+        if (!promptText.isEmpty()) {
+            try {
+                promptComponent = MiniMessage.miniMessage().deserialize(promptText);
+            } catch (Exception e) {
+                promptComponent = LegacyComponentSerializer.legacyAmpersand().deserialize(promptText);
+            }
+        }
+
         UUID packId = UUID.nameUUIDFromBytes(url.getBytes(StandardCharsets.UTF_8));
         byte[] finalHash = (hashBytes != null && hashBytes.length > 0) ? hashBytes : null;
 
         try {
-            player.setResourcePack(packId, url, finalHash, prompt, force);
+            player.setResourcePack(packId, url, finalHash, promptComponent, required);
             return true;
         } catch (Throwable t) {
             try {
@@ -217,8 +261,8 @@ public class ResourcePackManager {
 
                 net.kyori.adventure.resource.ResourcePackRequest request = net.kyori.adventure.resource.ResourcePackRequest.resourcePackRequest()
                         .packs(infoBuilder.build())
-                        .required(force)
-                        .prompt(prompt)
+                        .required(required)
+                        .prompt(promptComponent)
                         .build();
 
                 player.sendResourcePacks(request);
@@ -231,11 +275,16 @@ public class ResourcePackManager {
     }
 
     private byte[] hexStringToByteArray(String s) {
-        int len = s.length();
+        if (s == null) return new byte[0];
+        String cleaned = s.trim();
+        int len = cleaned.length();
+        if (len == 0 || len % 2 != 0) return new byte[0];
         byte[] data = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {
-            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                    + Character.digit(s.charAt(i + 1), 16));
+            int d1 = Character.digit(cleaned.charAt(i), 16);
+            int d2 = Character.digit(cleaned.charAt(i + 1), 16);
+            if (d1 == -1 || d2 == -1) return new byte[0];
+            data[i / 2] = (byte) ((d1 << 4) + d2);
         }
         return data;
     }

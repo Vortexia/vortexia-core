@@ -42,6 +42,13 @@ public class ProfileCommand implements BaseCommand {
             .executesPlayer((player, args) -> {
               giveCard(player);
             }))
+        .withSubcommand(new CommandAPICommand("give")
+            .withPermission(Permission.COMMAND_CCCD_GIVE.getNode())
+            .withArguments(new EntitySelectorArgument.OnePlayer("target"))
+            .executesPlayer((player, args) -> {
+              Player target = (Player) args.get("target");
+              giveCardTo(player, target);
+            }))
         .register();
   }
 
@@ -51,7 +58,6 @@ public class ProfileCommand implements BaseCommand {
       return;
     }
 
-    // Check if holding a card
     ItemStack item = viewer.getInventory().getItemInMainHand();
     if (plugin.getCitizenCardManager().isCitizenCard(item)) {
       String cid = plugin.getCitizenCardManager().getCitizenId(item);
@@ -69,7 +75,6 @@ public class ProfileCommand implements BaseCommand {
       }
     }
 
-    // Default to self
     showProfile(viewer, viewer);
   }
 
@@ -87,27 +92,39 @@ public class ProfileCommand implements BaseCommand {
   }
 
   private void giveCard(Player player) {
-    plugin.getStorageManager().getIdentity(player.getUniqueId()).thenAccept(optIdentity -> {
+    giveCardTo(player, player);
+  }
+
+  private void giveCardTo(Player issuer, Player target) {
+    if (target == null) {
+      issuer.sendMessage(Component.text("Target player not found or offline.", NamedTextColor.RED));
+      return;
+    }
+
+    plugin.getStorageManager().getIdentity(target.getUniqueId()).thenAccept(optIdentity -> {
       if (optIdentity.isEmpty()) {
-        player.sendMessage(Component.text("Identity not found! Please rejoin.", NamedTextColor.RED));
+        issuer.sendMessage(Component.text("Identity not found for " + target.getName() + "!", NamedTextColor.RED));
         return;
       }
 
       Identity identity = optIdentity.get();
-      if (identity.getCitizenId() == null) {
-        player.sendMessage(Component.text("You do not have a Citizen ID yet.", NamedTextColor.RED));
+      if (identity.getCitizenId() == null || identity.getCitizenId().isEmpty()) {
+        issuer.sendMessage(Component.text("Target player does not have a Citizen ID yet.", NamedTextColor.RED));
         return;
       }
 
-      // Check inventory space
-      if (player.getInventory().firstEmpty() == -1) {
-        player.sendMessage(Component.text("Your inventory is full!", NamedTextColor.RED));
+      if (target.getInventory().firstEmpty() == -1) {
+        issuer.sendMessage(Component.text("Cannot issue card: " + target.getName() + "'s inventory is full!", NamedTextColor.RED));
+        target.sendMessage(Component.text("An administrator tried to issue your Citizen ID Card, but your inventory is full!", NamedTextColor.RED));
         return;
       }
 
-      org.bukkit.inventory.ItemStack card = plugin.getCitizenCardManager().createCard(identity);
-      player.getInventory().addItem(card);
-      player.sendMessage(Component.text("You have received your Citizen ID Card.", NamedTextColor.GREEN));
+      ItemStack card = plugin.getCitizenCardManager().createCard(identity, target);
+      target.getInventory().addItem(card);
+      target.sendMessage(Component.text("You have received your Citizen ID Card.", NamedTextColor.GREEN));
+      if (!issuer.getUniqueId().equals(target.getUniqueId())) {
+        issuer.sendMessage(Component.text("Successfully issued Citizen ID Card to " + target.getName() + ".", NamedTextColor.GREEN));
+      }
     });
   }
 }

@@ -25,7 +25,6 @@ import java.util.List;
 
 public class ItemCraftListener implements Listener {
 
-    @SuppressWarnings("unused")
     private final VortexiaCore plugin;
 
     public ItemCraftListener(VortexiaCore plugin) {
@@ -85,6 +84,12 @@ public class ItemCraftListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPrepareAnvil(PrepareAnvilEvent event) {
         ItemStack first = event.getInventory().getFirstItem();
+        ItemStack second = event.getInventory().getSecondItem();
+        if ((first != null && plugin.getCitizenCardManager().isCitizenCard(first)) ||
+            (second != null && plugin.getCitizenCardManager().isCitizenCard(second))) {
+            return;
+        }
+
         ItemStack result = event.getResult();
         if (first != null && result != null) {
             transferOwner(first, result);
@@ -94,7 +99,11 @@ public class ItemCraftListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPrepareSmithing(PrepareSmithingEvent event) {
-        ItemStack base = event.getInventory().getItem(0); 
+        ItemStack base = event.getInventory().getItem(0);
+        if (base != null && plugin.getCitizenCardManager().isCitizenCard(base)) {
+            return;
+        }
+
         ItemStack result = event.getResult();
         if (base != null && result != null) {
             transferOwner(base, result);
@@ -106,6 +115,11 @@ public class ItemCraftListener implements Listener {
     public void onPrepareGrindstone(PrepareGrindstoneEvent event) {
         ItemStack upper = event.getInventory().getItem(0);
         ItemStack lower = event.getInventory().getItem(1);
+        if ((upper != null && plugin.getCitizenCardManager().isCitizenCard(upper)) ||
+            (lower != null && plugin.getCitizenCardManager().isCitizenCard(lower))) {
+            return;
+        }
+
         ItemStack result = event.getResult();
         if (result != null) {
             if (upper != null && upper.hasItemMeta() && upper.getItemMeta().getPersistentDataContainer().has(VortexiaKeys.OWNER_UUID, PersistentDataType.STRING)) {
