@@ -65,7 +65,7 @@ public class ProfileCommand implements BaseCommand {
         plugin.getStorageManager().getIdentityByCitizenId(cid).thenAccept(optIdentity -> {
           if (optIdentity.isPresent()) {
             plugin.getSchedulerService().runEntity(viewer, () -> {
-              new ProfileGUI(plugin).open(viewer, optIdentity.get());
+              plugin.getProfileGUI().open(viewer, optIdentity.get());
             });
           } else {
             viewer.sendMessage(Component.text("Identity on card not found in database.", NamedTextColor.RED));
@@ -86,7 +86,7 @@ public class ProfileCommand implements BaseCommand {
       }
 
       plugin.getSchedulerService().runEntity(viewer, () -> {
-        new ProfileGUI(plugin).open(viewer, optIdentity.get());
+        plugin.getProfileGUI().open(viewer, optIdentity.get());
       });
     });
   }

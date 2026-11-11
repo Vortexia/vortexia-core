@@ -5,6 +5,7 @@ import me.alikuxac.vortexia.core.VortexiaCore;
 import me.alikuxac.vortexia.core.implementation.gui.ProfileGUI;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -14,6 +15,7 @@ import org.bukkit.event.inventory.PrepareGrindstoneEvent;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.inventory.PrepareSmithingEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
 public class CitizenCardListener implements Listener {
@@ -67,6 +69,10 @@ public class CitizenCardListener implements Listener {
 
   @EventHandler
   public void onPlayerInteract(PlayerInteractEvent event) {
+    if (event.getHand() != EquipmentSlot.HAND) {
+      return;
+    }
+
     if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
       return;
     }
@@ -77,15 +83,16 @@ public class CitizenCardListener implements Listener {
       if (cid == null) return;
 
       event.setCancelled(true);
+      Player player = event.getPlayer();
       
       plugin.getStorageManager().getIdentityByCitizenId(cid).thenAccept(optIdentity -> {
-        if (optIdentity.isPresent()) {
-          plugin.getSchedulerService().runEntity(event.getPlayer(), () -> {
-            new ProfileGUI(plugin).open(event.getPlayer(), optIdentity.get());
-          });
-        } else {
-          event.getPlayer().sendMessage(Component.text("Identity on card not found.", NamedTextColor.RED));
-        }
+        plugin.getSchedulerService().runEntity(player, () -> {
+          if (optIdentity.isPresent()) {
+            plugin.getProfileGUI().open(player, optIdentity.get());
+          } else {
+            player.sendMessage(Component.text("Identity on card not found in database.", NamedTextColor.RED));
+          }
+        });
       });
     }
   }

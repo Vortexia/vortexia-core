@@ -35,6 +35,7 @@ import me.alikuxac.vortexia.core.core.grid.CoreGridManager;
 import me.alikuxac.vortexia.core.core.service.ModDetectorService;
 import me.alikuxac.vortexia.core.implementation.item.CitizenCardManager;
 import me.alikuxac.vortexia.core.implementation.item.CoreItemRegistry;
+import me.alikuxac.vortexia.core.implementation.gui.ProfileGUI;
 import me.alikuxac.vortexia.core.implementation.gui.SecurityGUI;
 import me.alikuxac.vortexia.core.implementation.gui.GuideGUI;
 import me.alikuxac.vortexia.core.implementation.hud.HudManager;
@@ -63,6 +64,7 @@ public final class VortexiaCore extends JavaPlugin {
     private IdentityUtil identityUtil;
     private IdentityMigrationHelper identityMigrationHelper;
     private CitizenCardManager citizenCardManager;
+    private ProfileGUI profileGUI;
     private SecurityGUI securityGUI;
     private SecurityManager securityManager;
     private InventorySyncManager inventorySyncManager;
@@ -143,6 +145,7 @@ public final class VortexiaCore extends JavaPlugin {
 
         this.identityMigrationHelper = new IdentityMigrationHelper(this);
         this.citizenCardManager = new CitizenCardManager(this);
+        this.profileGUI = new ProfileGUI(this);
         this.securityGUI = new SecurityGUI(this);
         this.securityManager = new SecurityManager(this);
         this.inventorySyncManager = new InventorySyncManager(this);
@@ -368,6 +371,10 @@ public final class VortexiaCore extends JavaPlugin {
 
     public CitizenCardManager getCitizenCardManager() {
         return citizenCardManager;
+    }
+
+    public ProfileGUI getProfileGUI() {
+        return profileGUI;
     }
 
     public SecurityGUI getSecurityGUI() {
