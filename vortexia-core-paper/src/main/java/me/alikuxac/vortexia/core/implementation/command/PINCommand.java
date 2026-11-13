@@ -76,8 +76,13 @@ public class PINCommand implements BaseCommand {
             return;
           }
 
-          plugin.getStorageManager().getIdentity(player.getUniqueId()).thenAccept(optIdentity -> {
-            if (optIdentity.isEmpty() || optIdentity.get().getPin() == null) {
+          plugin.getStorageManager().getIdentity(player.getUniqueId()).thenCompose(optIdentity -> {
+            if (optIdentity.isPresent()) {
+              return java.util.concurrent.CompletableFuture.completedFuture(optIdentity);
+            }
+            return plugin.getIdentityMigrationHelper().findOrMigrateIdentity(player);
+          }).thenAccept(optIdentity -> {
+            if (optIdentity.isEmpty() || optIdentity.get().getPin() == null || optIdentity.get().getPin().isEmpty()) {
               player.sendMessage(Component.text("No PIN found for this account. Use /pin setup.", NamedTextColor.RED));
               return;
             }

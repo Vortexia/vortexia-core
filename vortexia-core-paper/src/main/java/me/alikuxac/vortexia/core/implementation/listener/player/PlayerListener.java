@@ -30,12 +30,9 @@ public class PlayerListener implements Listener {
   public void onPlayerJoin(PlayerJoinEvent event) {
     Player player = event.getPlayer();
 
-    // Secure by default: mark as unauthenticated immediately
     plugin.getSecurityManager().markAsUnauthenticated(player);
-    // Apply Failsafe lock (clear inventory and cache locally)
     plugin.getInventorySyncManager().applyFailsafeLock(player);
 
-    // Trigger mod detector check on join
     if (plugin.getModDetectorService() != null) {
       plugin.getModDetectorService().onPlayerJoin(player);
     }
@@ -46,25 +43,69 @@ public class PlayerListener implements Listener {
 
     plugin.getLoggerService().debug("Player joining: " + player.getName());
 
-    // Identity check
     plugin.getStorageManager().getIdentity(player.getUniqueId()).thenAccept(optIdentity -> {
       if (optIdentity.isPresent()) {
         plugin.getLoggerService().debug("Found existing identity for " + player.getName());
-        checkAndRequestAuth(player);
+        handleIdentityAuth(player, optIdentity.get());
       } else {
-        // Try searching by name (for migrations)
         plugin.getStorageManager().getIdentityByName(player.getName()).thenAccept(optByName -> {
           if (optByName.isPresent()) {
             plugin.getLoggerService().debug("Found identity by name for " + player.getName() + " (migration needed)");
-            checkAndRequestAuth(player);
+            handleIdentityAuth(player, optByName.get());
           } else {
-            // New player logic
-            player.sendMessage(Component.text("Welcome to Vortexia! Please set up a security PIN using /pin setup", NamedTextColor.YELLOW));
-            plugin.getLoggerService().debug("No identity found for " + player.getName() + " (new player will be created on save)");
+            plugin.getLoggerService().debug("No identity found for " + player.getName() + " (new player)");
+            handleNewPlayerAuth(player);
           }
         });
       }
     });
+  }
+
+  private void handleIdentityAuth(Player player, me.alikuxac.vortexia.api.model.Identity identity) {
+    if (identityUtil.isOnlineMode() && identity.hasPremiumUuid()) {
+      plugin.getLoggerService().debug("Premium player " + player.getName() + " detected, skipping PIN.");
+      plugin.getSchedulerService().runEntity(player, () -> plugin.getSecurityManager().authenticate(player));
+      return;
+    }
+
+    if (plugin.getAuthHookManager() != null && plugin.getAuthHookManager().isWaitingForLogin(player)) {
+      plugin.getLoggerService().debug("External auth waiting for " + player.getName() + ", deferring PIN prompt.");
+      return;
+    }
+
+    promptPinAuth(player, identity);
+  }
+
+  private void handleNewPlayerAuth(Player player) {
+    if (plugin.getAuthHookManager() != null && plugin.getAuthHookManager().isWaitingForLogin(player)) {
+      plugin.getLoggerService().debug("External auth waiting for new player " + player.getName() + ", deferring PIN setup.");
+      return;
+    }
+
+    player.sendMessage(Component.text("Welcome to Vortexia! Please set up a security PIN to protect your account.", NamedTextColor.YELLOW));
+    plugin.getSchedulerService().runDelayed(() -> {
+      if (player.isOnline() && !plugin.getSecurityManager().isAuthenticated(player)) {
+        plugin.getSecurityGUI().openSetup(player);
+      }
+    }, 10L);
+  }
+
+  public void promptPinAuth(Player player, me.alikuxac.vortexia.api.model.Identity identity) {
+    if (identity.getPin() == null || identity.getPin().isEmpty()) {
+      player.sendMessage(Component.text("Please set up your security PIN using /pin setup", NamedTextColor.YELLOW));
+      plugin.getSchedulerService().runDelayed(() -> {
+        if (player.isOnline() && !plugin.getSecurityManager().isAuthenticated(player)) {
+          plugin.getSecurityGUI().openSetup(player);
+        }
+      }, 10L);
+    } else {
+      player.sendMessage(Component.text("This account is protected. Please verify your PIN using /pin verify", NamedTextColor.YELLOW));
+      plugin.getSchedulerService().runDelayed(() -> {
+        if (player.isOnline() && !plugin.getSecurityManager().isAuthenticated(player)) {
+          plugin.getSecurityGUI().openVerify(player);
+        }
+      }, 10L);
+    }
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
@@ -125,7 +166,7 @@ public class PlayerListener implements Listener {
   @EventHandler(priority = EventPriority.MONITOR)
   public void onWorldSave(org.bukkit.event.world.WorldSaveEvent event) {
     long now = System.currentTimeMillis();
-    if (now - lastSaveTime < 5000) { // Debounce 5 seconds
+    if (now - lastSaveTime < 5000) {
       return;
     }
     lastSaveTime = now;
@@ -138,20 +179,5 @@ public class PlayerListener implements Listener {
     }
   }
 
-  private void checkAndRequestAuth(Player player) {
-    plugin.getStorageManager().getCache().getByUuid(player.getUniqueId()).ifPresent(identity -> {
-      // Check online mode bypass
-      if (identityUtil.isOnlineMode() && identity.hasPremiumUuid()) {
-        plugin.getLoggerService().debug("Premium player " + player.getName() + " detected, skipping PIN.");
-        plugin.getSecurityManager().authenticate(player);
-        return;
-      }
 
-      if (identity.getPin() == null || identity.getPin().isEmpty()) {
-        player.sendMessage(Component.text("Please set up your security PIN using /pin setup", NamedTextColor.YELLOW));
-      } else {
-        player.sendMessage(Component.text("This account is protected. Please verify your PIN using /pin verify", NamedTextColor.YELLOW));
-      }
-    });
-  }
 }

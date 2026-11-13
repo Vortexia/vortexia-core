@@ -20,7 +20,10 @@ public class SecurityPacketListener extends PacketListenerAbstract {
         if (event.getPlayer() == null) return;
         Player player = (Player) event.getPlayer();
 
-        // If player is not authenticated in Vortexia SecurityManager, cancel interaction packets
+        if (plugin.getAuthHookManager() != null && plugin.getAuthHookManager().isWaitingForLogin(player)) {
+            return;
+        }
+
         if (!plugin.getSecurityManager().isAuthenticated(player)) {
             com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon type = event.getPacketType();
 
@@ -31,17 +34,13 @@ public class SecurityPacketListener extends PacketListenerAbstract {
     }
 
     private boolean isRestrictedPacket(com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon type) {
-        // Cancel movement
         if (type.equals(PacketType.Play.Client.PLAYER_FLYING) ||
             type.equals(PacketType.Play.Client.PLAYER_POSITION) ||
-            type.equals(PacketType.Play.Client.PLAYER_POSITION_AND_ROTATION) ||
-            type.equals(PacketType.Play.Client.PLAYER_ROTATION)) {
+            type.equals(PacketType.Play.Client.PLAYER_POSITION_AND_ROTATION)) {
             return true;
         }
 
-        // Cancel interactions
-        if (type.equals(PacketType.Play.Client.CLICK_WINDOW) ||
-            type.equals(PacketType.Play.Client.INTERACT_ENTITY) ||
+        if (type.equals(PacketType.Play.Client.INTERACT_ENTITY) ||
             type.equals(PacketType.Play.Client.PLAYER_DIGGING) ||
             type.equals(PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) ||
             type.equals(PacketType.Play.Client.ANIMATION)) {

@@ -47,15 +47,43 @@ public class AuthMeHook implements IAuthHook, Listener {
         Player player = event.getPlayer();
         plugin.getLoggerService().debug("AuthMe login detected for " + player.getName());
         
-        // After AuthMe login, we might still need PIN verification
         if (!plugin.getSecurityManager().isAuthenticated(player)) {
-            plugin.getStorageManager().getCache().getByUuid(player.getUniqueId()).ifPresent(identity -> {
-                if (identity.getPin() == null || identity.getPin().isEmpty()) {
-                    player.sendMessage(Component.text("AuthMe login successful! Now please set up your security PIN using /pin setup", NamedTextColor.YELLOW));
+            plugin.getStorageManager().getIdentity(player.getUniqueId()).thenAccept(optIdentity -> {
+                if (optIdentity.isPresent()) {
+                    promptPin(player, optIdentity.get());
                 } else {
-                    player.sendMessage(Component.text("AuthMe login successful! Now please verify your PIN using /pin verify", NamedTextColor.YELLOW));
+                    plugin.getStorageManager().getIdentityByName(player.getName()).thenAccept(optByName -> {
+                        if (optByName.isPresent()) {
+                            promptPin(player, optByName.get());
+                        } else {
+                            player.sendMessage(Component.text("AuthMe login successful! Please set up your security PIN.", NamedTextColor.YELLOW));
+                            plugin.getSchedulerService().runDelayed(() -> {
+                                if (player.isOnline() && !plugin.getSecurityManager().isAuthenticated(player)) {
+                                    plugin.getSecurityGUI().openSetup(player);
+                                }
+                            }, 5L);
+                        }
+                    });
                 }
             });
+        }
+    }
+
+    private void promptPin(Player player, me.alikuxac.vortexia.api.model.Identity identity) {
+        if (identity.getPin() == null || identity.getPin().isEmpty()) {
+            player.sendMessage(Component.text("AuthMe login successful! Now please set up your security PIN.", NamedTextColor.YELLOW));
+            plugin.getSchedulerService().runDelayed(() -> {
+                if (player.isOnline() && !plugin.getSecurityManager().isAuthenticated(player)) {
+                    plugin.getSecurityGUI().openSetup(player);
+                }
+            }, 5L);
+        } else {
+            player.sendMessage(Component.text("AuthMe login successful! Now please verify your PIN.", NamedTextColor.YELLOW));
+            plugin.getSchedulerService().runDelayed(() -> {
+                if (player.isOnline() && !plugin.getSecurityManager().isAuthenticated(player)) {
+                    plugin.getSecurityGUI().openVerify(player);
+                }
+            }, 5L);
         }
     }
 

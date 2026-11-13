@@ -49,15 +49,15 @@ public class SecurityGUI implements Listener {
     }
 
     public void openSetup(Player player) {
-        open(player, Mode.SETUP);
+        plugin.getSchedulerService().runEntity(player, () -> open(player, Mode.SETUP));
     }
 
     public void openVerify(Player player) {
-        open(player, Mode.VERIFY);
+        plugin.getSchedulerService().runEntity(player, () -> open(player, Mode.VERIFY));
     }
 
     public void openChangeVerify(Player player) {
-        open(player, Mode.CHANGE_OLD);
+        plugin.getSchedulerService().runEntity(player, () -> open(player, Mode.CHANGE_OLD));
     }
 
     private void open(Player player, Mode mode) {
@@ -83,25 +83,21 @@ public class SecurityGUI implements Listener {
     }
 
     private void refreshItems(Player player, Inventory inv, Mode mode) {
-        // Background
         ItemStack filler = createItem(Material.BLACK_STAINED_GLASS_PANE, " ");
         for (int i = 0; i < 54; i++) {
             inv.setItem(i, filler);
         }
 
-        // Display current input
         String input = currentInput.getOrDefault(player.getUniqueId(), new StringBuilder()).toString();
         String masked = "*".repeat(input.length());
         inv.setItem(4, createItem(Material.LIME_STAINED_GLASS_PANE, "PIN: " + (input.isEmpty() ? "____" : masked)));
 
-        // Number Pad (Standard Layout)
         int[] slots = {10, 11, 12, 19, 20, 21, 28, 29, 30, 40};
         for (int i = 1; i <= 9; i++) {
             inv.setItem(slots[i - 1], createItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, String.valueOf(i)));
         }
         inv.setItem(slots[9], createItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, "0"));
 
-        // Actions
         inv.setItem(43, createItem(Material.RED_CONCRETE, "Clear", NamedTextColor.RED));
         inv.setItem(44, createItem(Material.LIME_CONCRETE, "Confirm", NamedTextColor.GREEN));
     }
@@ -115,7 +111,6 @@ public class SecurityGUI implements Listener {
         if (topInv.getHolder() instanceof SecurityGUIHolder holder) {
             event.setCancelled(true);
             
-            // Only handle clicks in the top inventory
             if (event.getClickedInventory() != topInv) return;
 
             ItemStack clicked = event.getCurrentItem();
@@ -125,7 +120,6 @@ public class SecurityGUI implements Listener {
             UUID uuid = player.getUniqueId();
             StringBuilder sb = currentInput.computeIfAbsent(uuid, k -> new StringBuilder());
 
-            // Slot-based detection
             int[] numberSlots = {10, 11, 12, 19, 20, 21, 28, 29, 30, 40};
             String[] numbers = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"};
 
@@ -139,11 +133,40 @@ public class SecurityGUI implements Listener {
                 }
             }
 
-            if (slot == 43) { // Clear
+            if (slot == 43) {
                 sb.setLength(0);
                 refreshItems(player, topInv, holder.getMode());
-            } else if (slot == 44) { // Confirm
+            } else if (slot == 44) {
                 handleConfirm(player, sb.toString(), holder.getMode());
+            }
+        }
+    }
+
+    @EventHandler
+    public void onInventoryClose(org.bukkit.event.inventory.InventoryCloseEvent event) {
+        if (!(event.getPlayer() instanceof Player player)) return;
+        if (event.getInventory().getHolder() instanceof SecurityGUIHolder holder) {
+            UUID uuid = player.getUniqueId();
+            openInventories.remove(uuid);
+
+            if (!plugin.getSecurityManager().isAuthenticated(player) && player.isOnline()) {
+                if (plugin.getSecurityManager().pinLockoutSecondsLeft(player) > 0) {
+                    return;
+                }
+
+                if (plugin.getAuthHookManager() != null && plugin.getAuthHookManager().isWaitingForLogin(player)) {
+                    return;
+                }
+
+                plugin.getSchedulerService().runDelayed(() -> {
+                    if (player.isOnline() && !plugin.getSecurityManager().isAuthenticated(player)) {
+                        if (holder.getMode() == Mode.SETUP) {
+                            openSetup(player);
+                        } else if (holder.getMode() == Mode.VERIFY) {
+                            openVerify(player);
+                        }
+                    }
+                }, 5L);
             }
         }
     }
@@ -218,7 +241,6 @@ public class SecurityGUI implements Listener {
                     if (optIdentity.isPresent()) {
                         String storedHash = optIdentity.get().getPin();
                         if (PINUtil.verify(pin, storedHash)) {
-                            // Correct! Now open the Setup for new PIN
                             plugin.getSchedulerService().runEntity(player, () -> open(player, Mode.CHANGE_NEW));
                         } else {
                             reportFailure(player, uuid, mode);
